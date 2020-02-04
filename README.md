@@ -23,12 +23,12 @@ You are encouraged to create your own forks and work on them, modifying everythi
 - [ ] Routing protocol (1)
 - [ ] Test for all above
 
-4. Leader Lese
+4. Leader Lease
 - [ ] leased-based mechanism on non-reconfigurable code
 - [ ] benchmark
 - [ ] test for all above
 
-5. Reconfigurable Leader Leses
+5. Reconfigurable Leader Leases
 - [ ] leased-based mechanism on reconfigurable code
 
 
