@@ -3,6 +3,35 @@
 This project contains some code to get you started with the project.
 You are encouraged to create your own forks and work on them, modifying everything and anything as you desire it.
 
+## Tasklist
+1. Infrstructure
+- [ ] Partition key-space
+- [ ] Replication Algorithm
+- [ ] Lookup values
+- [ ] Failure Detector
+- [ ] Tests for all above
+- [ ] Deployment
+
+2. KV-Store
+- [ ] PUT and GET
+- [ ] Replication Algorithm (1)
+- [ ] CAS 
+- [ ] Tests for all above
+
+3. Reconfiguration
+- [ ] Reconfiguration support
+- [ ] Routing protocol (1)
+- [ ] Test for all above
+
+4. Leader Lese
+- [ ] leased-based mechanism on non-reconfigurable code
+- [ ] benchmark
+- [ ] test for all above
+
+5. Reconfigurable Leader Leses
+- [ ] leased-based mechanism on reconfigurable code
+
+
 ## Overview
 
 The project is split into 3 sub parts:
