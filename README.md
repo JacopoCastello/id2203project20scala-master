@@ -4,7 +4,7 @@ This project contains some code to get you started with the project.
 You are encouraged to create your own forks and work on them, modifying everything and anything as you desire it.
 
 ## Tasklist
-1. Infrstructure
+1. Infrastructure
 - [ ] Partition key-space
 - [ ] Replication Algorithm
 - [ ] Lookup values
