@@ -99,7 +99,7 @@ class ClientService extends ComponentDefinition {
   loopbck uponEvent {
     case OpWithPromise(op, promise) => {
       val rm = RouteMsg(op.key, op); // don't know which partition is responsible, so ask the bootstrap server to forward it
-      trigger(NetMessage(self, server, rm) -> net);
+      trigger(NetMessage(self, server, rm) -> net); // overlayManager
       pending += (op.id -> promise);
     }
   }
@@ -107,7 +107,7 @@ class ClientService extends ComponentDefinition {
   def op(key: String): Future[OpResponse] = {
     val op = Op(key);
     val owf = OpWithPromise(op);
-    trigger(owf -> onSelf);
+    trigger(owf -> onSelf); // look at loopback event hndler
     owf.promise.future
   }
 }

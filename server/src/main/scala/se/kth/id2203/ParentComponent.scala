@@ -38,8 +38,8 @@ class ParentComponent extends ComponentDefinition {
   val net = requires[Network];
   val timer = requires[Timer];
   //******* Children ******
-  val overlay = create(classOf[VSOverlayManager], Init.NONE);
-  val kv = create(classOf[KVService], Init.NONE);
+  val overlay = create(classOf[VSOverlayManager], Init.NONE); // --> go to VSOverlayManager
+  val kv = create(classOf[KVService], Init.NONE);// --> go to KVService
   val boot = cfg.readValue[NetAddress]("id2203.project.bootstrap-address") match {
     case Some(_) => create(classOf[BootstrapClient], Init.NONE); // start in client mode
     case None    => create(classOf[BootstrapServer], Init.NONE); // start in server mode

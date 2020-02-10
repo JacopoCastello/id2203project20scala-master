@@ -49,7 +49,7 @@ class VSOverlayManager extends ComponentDefinition {
   val timer = requires[Timer];
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
-  private var lut: Option[LookupTable] = None;
+  private var lut: Option[LookupTable] = None; // --> go to LookupTable
   //******* Handlers ******
   boot uponEvent {
     case GetInitialAssignments(nodes) => {

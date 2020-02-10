@@ -31,7 +31,7 @@ import se.kth.id2203.networking.NetAddress;
 @SerialVersionUID(6322485231428233902L)
 class LookupTable extends NodeAssignment with Serializable {
 
-  val partitions = TreeSetMultiMap.empty[Int, NetAddress];
+  val partitions = TreeSetMultiMap.empty[Int, NetAddress]; //A Multimap is a general way to associate keys with arbitrarily many values.
 
   def lookup(key: String): Iterable[NetAddress] = {
     val keyHash = key.hashCode();

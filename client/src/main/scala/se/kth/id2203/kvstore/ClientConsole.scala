@@ -52,7 +52,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
   val opCommand = parsed(opParser, usage = "op <key>", descr = "Executes an op for <key>.") { key =>
     println(s"Op with $key");
 
-    val fr = service.op(key);
+    val fr = service.op(key); // call ClientService op(key)
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);

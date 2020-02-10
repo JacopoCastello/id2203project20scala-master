@@ -47,7 +47,7 @@ class BootstrapServer extends ComponentDefinition {
   val net = requires[Network];
   val timer = requires[Timer];
   //******* Fields ******
-  val self = cfg.getValue[NetAddress]("id2203.project.address");
+  val self = cfg.getValue[NetAddress]("id2203.project.address"); // fro reference.conf
   val bootThreshold = cfg.getValue[Int]("id2203.project.bootThreshold");
   private var state: State = Collecting;
   private var timeoutId: Option[UUID] = None;
@@ -56,7 +56,7 @@ class BootstrapServer extends ComponentDefinition {
   private var initialAssignment: Option[NodeAssignment] = None;
   //******* Handlers ******
   ctrl uponEvent {
-    case _: Start => {
+    case _: Start => { //starting the Bootstrap server
       log.info("Starting bootstrap server on {}, waiting for {} nodes...", self, bootThreshold);
       val timeout: Long = (cfg.getValue[Long]("id2203.project.keepAlivePeriod") * 2L);
       val spt = new SchedulePeriodicTimeout(timeout, timeout);
@@ -71,8 +71,8 @@ class BootstrapServer extends ComponentDefinition {
     case BSTimeout(_) => {
       state match {
         case Collecting => {
-          log.info("{} hosts in active set.", active.size);
-          if (active.size >= bootThreshold) {
+          log.info("{} hosts in active set.", active.size); //periodiclly check how much are in active set
+          if (active.size >= bootThreshold) { // boot if the Threshold is fulfilled
             bootUp();
           }
         }
