@@ -3,6 +3,40 @@
 This project contains some code to get you started with the project.
 You are encouraged to create your own forks and work on them, modifying everything and anything as you desire it.
 
+## Tasklist
+1. Infrastructure
+- [ ] Partition key-space
+- [ ] Replication Algorithm
+- [ ] Lookup values
+- [ ] Failure Detector
+- [ ] Tests for all above
+- [ ] Deployment
+
+2. KV-Store
+- [ ] PUT and GET
+- [ ] Replication Algorithm (1)
+- [ ] CAS 
+- [ ] Tests for all above
+
+3. Reconfiguration
+- [ ] Reconfiguration support
+- [ ] Routing protocol (1)
+- [ ] Test for all above
+
+4. Leader Lease
+- [ ] leased-based mechanism on non-reconfigurable code
+- [ ] benchmark
+- [ ] test for all above
+
+5. Reconfigurable Leader Leases
+- [ ] leased-based mechanism on reconfigurable code
+
+## Start to copy
+Boostrap: java -jar server/target/scala-2.13/server.jar -p 45678
+Normal nº 1: java -jar server/target/scala-2.13/server.jar -p 45679 -s localhost:45678
+Normal nº2: java -jar server/target/scala-2.13/server.jar -p 45680 -s  localhost:45678
+Client: java -jar client/target/scala-2.13/client.jar -p 56787 -s localhost:45678
+
 ## Overview
 
 The project is split into 3 sub parts:
