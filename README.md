@@ -31,6 +31,11 @@ You are encouraged to create your own forks and work on them, modifying everythi
 5. Reconfigurable Leader Leases
 - [ ] leased-based mechanism on reconfigurable code
 
+## Start to copy
+Boostrap: java -jar server/target/scala-2.13/server.jar -p 45678
+Normal nº 1: java -jar server/target/scala-2.13/server.jar -p 45679 -s localhost:45678
+Normal nº2: java -jar server/target/scala-2.13/server.jar -p 45680 -s  localhost:45678
+Client: java -jar client/target/scala-2.13/client.jar -p 56787 -s localhost:45678
 
 ## Overview
 
