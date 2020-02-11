@@ -39,10 +39,11 @@ class KVService extends ComponentDefinition {
   net uponEvent {
     case NetMessage(header, op: Op) => {
       if(op.key == "t"){
-        log.info("Got operation {}! this seems to work. Let's implement get, pu, cas here)", op);
+        log.info("Got operation {}! this seems to work. Let's implement get, put, cas here)", op);
       }
       log.info("Got operation {}! Now implement me please --- :)", op);
       trigger(NetMessage(self, header.src, op.response(OpCode.NotImplemented)) -> net);
     }
   }
 }
+// todo: implement PUT, GET, CAS here

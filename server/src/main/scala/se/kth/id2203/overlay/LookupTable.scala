@@ -63,3 +63,4 @@ object LookupTable {
     lut
   }
 }
+// todo: come up with a hash function and way to partition it: e.g. depending on the number of nodes available

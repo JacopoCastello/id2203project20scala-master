@@ -50,3 +50,5 @@ trait OperationResponse extends KompicsEvent {
 
 @SerialVersionUID(155271583133228661L)
 case class OpResponse(id: UUID, status: OpCode.OpCode) extends OperationResponse with Serializable;
+
+// todo: add operation response for op value (get, put, cs)

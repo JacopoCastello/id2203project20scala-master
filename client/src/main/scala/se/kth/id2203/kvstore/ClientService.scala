@@ -104,6 +104,8 @@ class ClientService extends ComponentDefinition {
     }
   }
 
+  // todo: define operations for PUT, GET, CS
+
   def op(key: String): Future[OpResponse] = {
     val op = Op(key);
     val owf = OpWithPromise(op);
