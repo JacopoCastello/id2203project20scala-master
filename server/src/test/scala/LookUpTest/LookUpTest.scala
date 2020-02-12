@@ -12,11 +12,15 @@ class LookUpTest extends FlatSpec {
   var adr1 = NetAddressConverter.convert("127.0.0.1:12345");
   var adr2 = NetAddressConverter.convert("127.0.0.1:56789");
   var adr3 = NetAddressConverter.convert("127.0.0.1:56787");
+  var adr4 = NetAddressConverter.convert("127.0.0.1:56777");
+  var adr5 = NetAddressConverter.convert("127.0.0.1:56757");
+  var adr6 = NetAddressConverter.convert("127.0.0.1:56775");
+  var adr7 = NetAddressConverter.convert("127.0.0.1:56555");
 
-  var nodest = Set(adr1, adr2, adr3);
+  var nodest = Set(adr1, adr2, adr3, adr4, adr5, adr6, adr7);
 
   var lut = new LookupTable();
-  lut =  LookupTable.generate(nodest);
+  lut =  LookupTable.generate(nodest, 3);
   print(lut)
 
 }
