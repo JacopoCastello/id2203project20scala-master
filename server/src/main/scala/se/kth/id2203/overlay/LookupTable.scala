@@ -43,14 +43,15 @@ class LookupTable extends NodeAssignment with Serializable {
     return partitions(partition);
   }*/
 
+  // our lookup
   def lookup(key: String): Iterable[NetAddress] = {
     val keyHash = key.hashCode(); // not collision free
-    val partitionIdx = keyHash % partitions.keySet.size // 0 or 1 or 2 if we have 3 partition
-    val partition = partitionIdx match {
+    val partitionIdx = keyHash % partitions.keySet.size // 0 or 1 or 2 if we have 3 partition --> always in N
+    /*val partition = partitionIdx match {
       case idx => idx
       case _    => partitions.lastKey
-    }
-    return partitions(partition);
+    }*/
+    return partitions(partitionIdx);
   }
 
 
@@ -91,7 +92,6 @@ object LookupTable {
       }
     }
 
-    //lut.partitions ++= (0 -> nodes);
     lut
 
   }
