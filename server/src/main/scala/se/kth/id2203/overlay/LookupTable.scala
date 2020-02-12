@@ -28,6 +28,19 @@ import java.util.Collection;
 import se.kth.id2203.bootstrapping.NodeAssignment;
 import se.kth.id2203.networking.NetAddress;
 
+/*
+Current implementation:
+3 or more nodes (max 5) per partition
+nodes get assigned depending on how many are available
+key get assigned to partition by modulo numberOfPartitions
+lookup those values via funtion
+
+Questions:
+How to update lookup for existing nodes once it grows (assignments might be shifted)?
+Also keys might hash to other partitions if more are availble -- might be too much effort to shift all of them
+--> Let's just assume a fixed number first and deal with this later
+ */
+
 @SerialVersionUID(6322485231428233902L)
 class LookupTable extends NodeAssignment with Serializable {
   val nodesInPartition = 3;

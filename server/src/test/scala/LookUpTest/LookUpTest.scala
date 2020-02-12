@@ -6,8 +6,9 @@ import se.kth.id2203.overlay.LookupTable;
 
 class LookUpTest extends FlatSpec {
 
-  var rDegree = 3;
+  var rDegree = 3; // 3 nodes as a minimum for each group
 
+  // some mock node addresses
   var adr1 = NetAddressConverter.convert("127.0.0.1:12345");
   var adr2 = NetAddressConverter.convert("127.0.0.1:56789");
   var adr3 = NetAddressConverter.convert("127.0.0.1:56787");
@@ -20,19 +21,19 @@ class LookUpTest extends FlatSpec {
 
   var lut = new LookupTable();
   lut = LookupTable.generate(nodeset, rDegree);
-  print("Node assignment to partitions: " + lut + "\n")
+  //print("Node assignment to partitions: " + lut + "\n")
 
   "A LookUpTable" should "be creatable and include all nodes" in {
 
 
-    print("get nodes : " + lut.getNodes().size + " \n")
+    //print("get nodes : " + lut.getNodes().size + " \n")
     assert(lut.getNodes().size == nodeset.size)
   }
 
   it should "assign keys to a valid partition" in {
     var testkey = "I am a key";
     var partitionForKey = lut.lookup(testkey);
-    print("Key is in partition: " + partitionForKey + " \n")
+    //print("Key is in partition: " + partitionForKey + " \n")
     assert(!partitionForKey.isEmpty)
   }
 
