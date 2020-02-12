@@ -21,6 +21,13 @@ class LookUpTest extends FlatSpec {
 
   var lut = new LookupTable();
   lut =  LookupTable.generate(nodest, 3);
-  print(lut)
+  print("Node assignment to partitions: \n"+lut)
+
+  var testkey = "I am a key";
+  var partitionForKey = lut.lookup(testkey);
+  print("Key is in partition: \n"+partitionForKey)
+
+
+
 
 }
