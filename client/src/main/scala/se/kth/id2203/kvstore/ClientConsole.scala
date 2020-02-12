@@ -53,10 +53,10 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
     println(s"Op with $key");
 
     val fr = service.op(key); // call ClientService op(key)
-    out.println("Operation sent! Awaiting response...");
+    out.println("Operation sent! Awaiting response...");x
     try {
       val r = Await.result(fr, 5.seconds);
-      out.println("Operation complete! Response was: " + r.status);
+      out.println("VIVA WILLYREX Operation complete! Response was: " + r.status);
     } catch {
       case e: Throwable => logger.error("Error during op.", e);
     }

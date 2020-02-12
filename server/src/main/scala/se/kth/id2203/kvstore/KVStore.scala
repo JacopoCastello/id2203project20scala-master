@@ -38,11 +38,34 @@ class KVService extends ComponentDefinition {
   //******* Handlers ******
   net uponEvent {
     case NetMessage(header, op: Op) => {
-      if(op.key == "t"){
-        log.info("Got operation {}! this seems to work. Let's implement get, put, cas here)", op);
+      /**
+      op.key match {
+
+          case "t" => log.info("KVStore :::: Got operation {}! this seems to work. THIS IS t", op);
+          case "get" => log.info("KVStore :::: Got operation {}! this seems to work. THIS IS get", op);
+          case "put" => log.info("KVStore :::: Got operation {}! this seems to work. THIS IS put", op);
+          case "cas" => log.info("KVStore :::: Got operation {}! this seems to work. THIS IS cas", op);
       }
-      log.info("Got operation {}! Now implement me please --- :)", op);
-      trigger(NetMessage(self, header.src, op.response(OpCode.NotImplemented)) -> net);
+      */
+
+      if(op.key == "t"){
+        log.info("KVStore :::: Got operation {}! this seems to work. Let's implement get, put, cas here)", op);
+        //  TODO: The operation comes here so we have to implement the ops.
+        trigger(NetMessage(self, header.src, op.response(OpCode.Ok)) -> net);
+      } else if(op.key == "g"){
+        log.info("KVStore :::: Got operation {}! this seems to work. GET", op);
+        trigger(NetMessage(self, header.src, op.response(OpCode.Ok)) -> net);
+        //  TODO: The operation comes here so we have to implement the ops.
+      } else {
+        log.info("KVStore :::: Got operation {}! Now implement me please --- :)", op);
+        trigger(NetMessage(self, header.src, op.response(OpCode.NotImplemented)) -> net);
+      }
+
+
+      //trigger(SC_Propose(ProposedOperation(header.src, op)) -> consensus)
+
+
+
     }
   }
 }
