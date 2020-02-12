@@ -67,9 +67,9 @@ class VSOverlayManager extends ComponentDefinition {
   net uponEvent {
     case NetMessage(header, RouteMsg(key, msg)) => {
       val nodes = lut.get.lookup(key);
-      assert(!nodes.isEmpty);
+      assert(!nodes.isEmpty, "nodes partition is empty");
       val i = Random.nextInt(nodes.size);
-      val target = nodes.drop(i).head;
+      val target = nodes.drop(i).head; // randomly forward it to one of the nodes in the partition
       log.info(s"Forwarding message for key $key to $target");
       trigger(NetMessage(header.src, target, msg) -> net);
     }
@@ -88,7 +88,7 @@ class VSOverlayManager extends ComponentDefinition {
   route uponEvent {
     case RouteMsg(key, msg) => {
       val nodes = lut.get.lookup(key);
-      assert(!nodes.isEmpty);
+      assert(!nodes.isEmpty, "nodes partition is empty");
       val i = Random.nextInt(nodes.size);
       val target = nodes.drop(i).head;
       log.info(s"Routing message for key $key to $target");

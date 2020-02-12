@@ -104,7 +104,6 @@ object LookupTable {
         idxIterator = 0;
       }
     }
-
     lut
 
   }
