@@ -84,16 +84,16 @@ class KVService extends ComponentDefinition {
           log.info(s"Handling operation {}!", command)
           storage += (command.key -> command.value)
           trigger(NetMessage(self, source, command.response(OpCode.Ok, command.value)) -> net)
-        /*case "CAS" =>
+        case "CAS" =>
           log.info(s"Handling operation {}!", command)
           val result = storage.get(command.key) match {
             case Some(value) => {
               // Only perform the operation if it is the same
-              if (command.expected.isDefined && command.expected.get == value) {
+              if (command.expected != "" && command.expected == value) {
                 storage(command.key) = command.value
               }
 
-              Some(value)
+              value
             }
             case None => {
               // Only add if it is expected to be empty
@@ -104,8 +104,8 @@ class KVService extends ComponentDefinition {
               None
             }
           }
-          trigger(NetMessage(self, source, command.response(OpCode.Ok, result)) -> net)
-      */}
+          trigger(NetMessage(self, source, command.response(OpCode.Ok, result.toString)) -> net)
+      }
     }
   }
 }

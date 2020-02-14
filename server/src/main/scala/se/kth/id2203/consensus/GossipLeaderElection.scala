@@ -115,6 +115,7 @@ class GossipLeaderElection(init: Init[GossipLeaderElection]) extends ComponentDe
     case CheckTimeout(_) => {
       if (ballots.size + 1 >= (topology.size / 2)) {
         checkLeader();
+      }
         ballots.clear();
         round = round + 1;
         for (p <- topology) {
@@ -127,22 +128,22 @@ class GossipLeaderElection(init: Init[GossipLeaderElection]) extends ComponentDe
     }
 
 
-      net uponEvent {
-        case NetMessage(src, HeartbeatReq(r, hb)) => {
-          if (hb > highestBallot) {
-            highestBallot = hb;
-          }
-          trigger(NetMessage(src, HeartbeatResp(r, ballot)) -> net);
-
+    net uponEvent {
+      case NetMessage(src, HeartbeatReq(r, hb)) => {
+        if (hb > highestBallot) {
+          highestBallot = hb;
         }
-        case NetMessage(src, HeartbeatResp(r, b)) => {
-          if (r == round) {
-            ballots += (src.src -> b);
+        trigger(NetMessage(self, src.src, HeartbeatResp(r, ballot)) -> net);
 
-          } else {
-            period = period + delta;
-          }
+      }
+      case NetMessage(src, HeartbeatResp(r, b)) => {
+        if (r == round) {
+          ballots += (src.src -> b);
+
+        } else {
+          period = period + delta;
         }
       }
-  }
+    }
+
 }
