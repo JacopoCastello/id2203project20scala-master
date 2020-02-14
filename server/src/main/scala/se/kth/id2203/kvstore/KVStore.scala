@@ -57,35 +57,33 @@ class KVService extends ComponentDefinition {
 
   //******* Handlers ******
   net uponEvent {
-    case NetMessage(src, op: Operation) if op.opType == "GET" => {
+    case NetMessage(src, op: Operation) => {
       op.opType match {
         case "GET" => log.info("Received operation GET from: " + src);
         case "PUT" => log.info("Received operation PUT from: " + src);
         case "CAS" => log.info("Received operation CAS from: " + src);
       }
     }
+      val opPropose = OperationToPropose(src.src, op)
+      trigger(SC_Propose(opPropose) -> consensus)
       log.info("Triggering the operation: " + src);
-      trigger(SC_Propose(OperationToPropose(src.src, op)) -> consensus)
     }
 
 
 
   // The decided upon messages
   consensus uponEvent {
-    case SC_Decide(OperationToPropose(source: NetAddress, command: Op)) => {
-      log.info(s"(Not) Handling operation {}!", command)
-      trigger(NetMessage(self, source, command.response(OpCode.NotImplemented)) -> net)
-    }
 
     case SC_Decide(OperationToPropose(source: NetAddress, command: Op)) => {
       command.opType match {
         case "GET" =>
           log.info(s"Handling operation {}!", command)
-          trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.get(command.key))) -> net)
+
+          trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.getOrElse(command.key, "None"))) -> net)
         case "PUT" =>
           log.info(s"Handling operation {}!", command)
           storage += (command.key -> command.value)
-          trigger(NetMessage(self, source, command.response(OpCode.Ok)) -> net)
+          trigger(NetMessage(self, source, command.response(OpCode.Ok, command.value)) -> net)
         /*case "CAS" =>
           log.info(s"Handling operation {}!", command)
           val result = storage.get(command.key) match {

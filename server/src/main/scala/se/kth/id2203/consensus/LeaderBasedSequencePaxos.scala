@@ -93,10 +93,12 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     ble uponEvent {
       case BLE_Leader(l, n) => {
+        log.info(s"Proposing leader: $l [$self] (n: $n, nL: $nL)\n")
         if (n > nL){
           leader = Some(l);
           nL = n;
           if (self == l && nL > nProm){
+            log.info(s"The leader is host: [$self]\n")
             state = (LEADER, PREPARE);
             propCmds = List.empty[RSM_Command];
             las.clear();
@@ -130,6 +132,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       }
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
         if ((n == nL) && (state == (LEADER, PREPARE))) {
+          log.info(s"Promise issued with leader: ${a.src}")
+
           acks(a.src) = (na, sfxa);
           lds(a.src) = lda;
           val P: Set[NetAddress] = pi.filter(x => acks.get(x) != None);
@@ -146,12 +150,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             }
           }
         } else if ((n == nL) && (state == (LEADER, ACCEPT))) {
+          log.info(s"Late request for Promise from: ${a.src}")
 
           lds(a.src) = lda;
           var sfx = suffix(va,lds(a.src));
-          trigger(NetMessage(a, AcceptSync(nL, sfx, lds(a.src))) -> net);
+          trigger(NetMessage(self, a.src, AcceptSync(nL, sfx, lds(a.src))) -> net);
           if (lc != 0){
-            trigger(NetMessage(a, Decide(ld, nL)) -> net);
+            trigger(NetMessage(self, a.src, Decide(ld, nL)) -> net);
           }
         }
       }
@@ -159,14 +164,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         if ((nProm == nL) && (state == (FOLLOWER, PREPARE))) {
           na = nL;
           va = prefix(va,ldp) ++ sfx;
-          trigger(NetMessage(p, Accepted(nL, va.size)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(nL, va.size)) -> net);
           state = (FOLLOWER, ACCEPT);
         }
       }
       case NetMessage(p, Accept(nL, c)) => {
         if ((nProm == nL) && (state == (FOLLOWER, ACCEPT))) {
           va = va ++ List(c);
-          trigger(NetMessage(p, Accepted(nL, va.size)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(nL, va.size)) -> net);
         }
       }
       case NetMessage(_, Decide(l, nL)) => {
