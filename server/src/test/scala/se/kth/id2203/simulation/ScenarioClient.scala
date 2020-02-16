@@ -58,7 +58,7 @@ class ScenarioClient extends ComponentDefinition {
       } else if (op_type == "Write" ) {
         for (i <- 0 to messages) {
           Ops ++= List(new Op("PUT", s"test$i", s"$i", "")) // Should not do anything
-        //  Ops ++= List(new Op("GET", s"test$i", "", "")) // Should not do anything
+          Ops ++= List(new Op("GET", s"test$i", "", "")) // Should not do anything
 
         }
         for (i <- 0 to messages) {
