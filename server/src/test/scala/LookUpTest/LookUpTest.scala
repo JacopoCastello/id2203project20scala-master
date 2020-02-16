@@ -37,4 +37,10 @@ class LookUpTest extends FlatSpec {
     assert(!partitionForKey.isEmpty)
   }
 
+  it should "manage to lookup its group" in {
+    var partitionForNode = lut.getNodesforGroup(adr1);
+    //print("Node1 is in partition: " + partitionForNode + " \n")
+    assert(!partitionForNode.isEmpty)
+  }
+
 }

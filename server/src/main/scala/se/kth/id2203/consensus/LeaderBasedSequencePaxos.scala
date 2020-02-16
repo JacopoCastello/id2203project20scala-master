@@ -76,6 +76,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     var na = 0l;
     var va = List.empty[RSM_Command];
     var ld = 0;
+    // reconfiguration
+    var cL = 0; //configuration i
+    var ca = 0; //configuration i
+
     // leader state
     var propCmds = List.empty[RSM_Command];
     val las = mutable.Map.empty[NetAddress, Int];

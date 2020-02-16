@@ -19,8 +19,8 @@ class KVParent extends ComponentDefinition {
   boot uponEvent {
     case Booted(assignment: LookupTable) => {
       val self = cfg.getValue[NetAddress]("id2203.project.address")
-      //val topology: Set[NetAddress] = assignment.lookupSelf(self)
-      val topology = assignment.getNodes()
+      val topology: Set[NetAddress] = assignment.getNodesforGroup(self)
+      //val topology = assignment.getNodes()
 
       val kv = create(classOf[KVService], Init.NONE)
       val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology))

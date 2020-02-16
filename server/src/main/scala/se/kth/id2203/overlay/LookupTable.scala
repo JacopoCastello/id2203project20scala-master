@@ -23,10 +23,13 @@
  */
 package se.kth.id2203.overlay;
 
-import com.larskroll.common.collections._;
-import java.util.Collection;
-import se.kth.id2203.bootstrapping.NodeAssignment;
-import se.kth.id2203.networking.NetAddress;
+import com.larskroll.common.collections._
+import java.util.Collection
+
+import se.kth.id2203.bootstrapping.NodeAssignment
+import se.kth.id2203.networking.NetAddress
+
+import scala.collection.mutable;
 
 /*
 Current implementation:
@@ -67,6 +70,10 @@ class LookupTable extends NodeAssignment with Serializable {
     return partitions(partitionIdx);
   }
 
+  // get the group from a nodeaddress which it is in
+  def getNodesforGroup(node: NetAddress): Set[NetAddress] = partitions.filter(partition => partition._2.iterator.contains(node)).foldLeft(Set.empty[NetAddress]) {
+    case (acc, kv) => acc ++ kv._2
+  }
 
   def getNodes(): Set[NetAddress] = partitions.foldLeft(Set.empty[NetAddress]) {
     case (acc, kv) => acc ++ kv._2
