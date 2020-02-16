@@ -29,7 +29,6 @@ import org.scalatest._
 import se.kth.id2203.ParentComponent
 import se.kth.id2203.networking._
 import se.sics.kompics.network.Address
-import se.sics.kompics.simulator.network.impl.NetworkModels
 import se.sics.kompics.simulator.result.SimulationResultSingleton
 import se.sics.kompics.simulator.run.LauncherComp
 import se.sics.kompics.simulator.{SimulationScenario => JSimulationScenario}
@@ -129,7 +128,7 @@ object SimpleScenario {
 
   private def isBootstrap(self: Int): Boolean = self == 1;
 
-  val setUniformLatencyNetwork = () => Op.apply((_: Unit) => ChangeNetwork(NetworkModels.withUniformRandomDelay(3, 7)));
+ // val setUniformLatencyNetwork = () => Op.apply((_: Unit) => ChangeNetwork(NetworkModels.withUniformRandomDelay(3, 7)));
 
   val startServerOp = Op { (self: Integer) =>
 
@@ -155,13 +154,15 @@ object SimpleScenario {
 
   def scenario(servers: Int): JSimulationScenario = {
 
-    val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
+    //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
     val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
     val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
-
-    networkSetup andThen
+    startCluster andThen
+      100.seconds afterTermination startClients andThen
+      200.seconds afterTermination Terminate
+   /* networkSetup andThen
       0.seconds afterTermination startCluster andThen
       10.seconds afterTermination startClients andThen
-      100.seconds afterTermination Terminate
+      100.seconds afterTermination Terminate*/
   }
 }
