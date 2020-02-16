@@ -54,7 +54,7 @@ class VSOverlayManager extends ComponentDefinition {
   boot uponEvent {
     case GetInitialAssignments(nodes) => {
       log.info("Generating LookupTable...");
-      val lut = LookupTable.generate(nodes);
+      val lut = LookupTable.generate(nodes, 3);
       logger.debug("Generated assignments:\n$lut");
       trigger(new InitialAssignments(lut) -> boot);
     }
@@ -67,8 +67,7 @@ class VSOverlayManager extends ComponentDefinition {
   net uponEvent {
     case NetMessage(header, RouteMsg(key, msg)) => {
       val nodes = lut.get.lookup(key);
-      assert(!nodes.isEmpty);
-      val i = Random.nextInt(nodes.size);
+      assert(!nodes.isEmpty, "nodes partition is empty");
       nodes.foreach(node => {
         trigger(NetMessage(header.src, node, msg) -> net);
         log.info(s"Forwarding message for key $key to $node");
