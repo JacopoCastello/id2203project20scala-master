@@ -33,14 +33,11 @@ trait Operation extends KompicsEvent {
   def value: String;
   def expected: String
 
-  //def response(status: OpCode.OpCode): OpResponse = OpResponse(id, status, None)
-  //def response(status: OpCode.OpCode, value: String): OpResponse = OpResponse(id, status, value)
 }
 
 @SerialVersionUID(-374812437823538710L)
-case class Op(opType: String, key: String, value: String, expected: String, id: UUID = UUID.randomUUID()) extends Operation with Serializable {
-  //def response(status: OpCode.OpCode): OpResponse = OpResponse(id, status, None);
-  def response(status: OpCode.OpCode, value: String): OpResponse = OpResponse(id, status, value);
+case class Op(key: String, id: UUID = UUID.randomUUID()) extends Operation with Serializable {
+  def response(status: OpCode.OpCode): OpResponse = OpResponse(id, status);
 }
 
 object OpCode {
@@ -57,6 +54,6 @@ trait OperationResponse extends KompicsEvent {
 }
 
 @SerialVersionUID(155271583133228661L)
-case class OpResponse(id: UUID, status: OpCode.OpCode, value: Any) extends OperationResponse with Serializable;
+case class OpResponse(id: UUID, status: OpCode.OpCode) extends OperationResponse with Serializable;
 
 // todo: add operation response for op value (get, put, cs)
