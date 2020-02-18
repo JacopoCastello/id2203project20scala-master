@@ -28,7 +28,7 @@ import se.sics.kompics.KompicsEvent;
 
 trait Operation extends KompicsEvent {
   def id: UUID;
-  def opType: String; //Type can be "GET", "PUT" and "CAS"
+  def opType: String; //Type can be "GET", "PUT" and "CAS", ""STOP"
   def key: String;
   def value: String;
   def expected: String

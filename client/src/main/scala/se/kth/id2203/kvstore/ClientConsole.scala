@@ -46,7 +46,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
   override def onInterrupt(): Unit = exit();
 
   val opParser = new ParsingObject[String] {
-    override def parseOperation[_: P]: P[String] = P("op" ~ " " ~ simpleStr.!);
+    override def parseOperation[_: P]: P[String] = P("op" ~ " " ~ simpleStr ~ " " ~ simpleStr.!);
   }
 
   val opCommand = parsed(opParser, usage = "op <key>", descr = "Executes an op for <key>.") { key =>
