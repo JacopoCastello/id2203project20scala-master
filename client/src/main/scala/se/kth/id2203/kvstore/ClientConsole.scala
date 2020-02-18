@@ -46,14 +46,14 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
   override def onInterrupt(): Unit = exit();
 
   val opParser = new ParsingObject[String] {
-    override def parseOperation[_: P]: P[String] = P("op" ~ " " ~ simpleStr.!);
+    override def parseOperation[_: P]: P[String] = P("op" ~ (" " ~ simpleStr).rep.!);
   }
 
   val opCommand = parsed(opParser, usage = "op <key>", descr = "Executes an op for <key>.") { key =>
     println(s"Input for Op: $key");
     
     var input: Array[String] = key.split(" ")
-    var operationType = input(0).toUpperCase()
+    var operationType = input(1).toUpperCase()
     var size = input.length
     
    if(size < 2){ //Not sure it is necessary, probably the parser already handle it
@@ -61,7 +61,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
    }
    else{
    
-    var keyV = input(1)
+    var keyV = input(2)
      
      if(size == 2 && operationType == "GET"){
        
@@ -80,7 +80,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
    
    if(size == 3 && operationType == "PUT"){
      
-     var valuePut = input(2)
+     var valuePut = input(3)
      
      val fr = service.op(Op(operationType, keyV, valuePut, " ")); // call ClientService op(key)
     out.println("Operation sent! Awaiting response...");
@@ -95,8 +95,8 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
    
    if(size == 4 && operationType == "CAS"){
      
-     var valueCas = input(2)
-     var expectedCas = input(3)
+     var valueCas = input(3)
+     var expectedCas = input(4)
      
      val fr = service.op(Op(operationType, keyV, valueCas, expectedCas)); // call ClientService op(key)
     out.println("Operation sent! Awaiting response...");
