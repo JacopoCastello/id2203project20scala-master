@@ -62,7 +62,7 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
   var seqnum = 0;
 
   def startTimer(delay: Long): Unit = {
-    val scheduledTimeout = new ScheduleTimeout(period);
+    val scheduledTimeout  = new ScheduleTimeout(period);
     scheduledTimeout.setTimeoutEvent(CheckTimeout(scheduledTimeout));
     trigger(scheduledTimeout -> timer);
   }
@@ -89,7 +89,8 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
 
           suspected = suspected + p;
           log.info("Suspecting " + p)
-          trigger(Suspect(p) -> epfd);
+          //trigger(Suspect(p) -> epfd); FOR TESTING VIA NET
+          trigger(NetMessage(self, self, Suspect(p)) -> net);
 
         } else if (alive.contains(p) && suspected.contains(p)) {
           suspected = suspected - p;

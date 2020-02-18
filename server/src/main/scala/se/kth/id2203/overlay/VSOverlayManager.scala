@@ -24,7 +24,6 @@
 package se.kth.id2203.overlay;
 
 import se.kth.id2203.bootstrapping._
-import se.kth.id2203.consensus.SequenceConsensus
 import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Suspect}
 import se.kth.id2203.kvstore.Op
 import se.kth.id2203.networking._
@@ -59,8 +58,7 @@ class VSOverlayManager extends ComponentDefinition {
   val boot = requires(Bootstrapping);
   val net = requires[Network];
   val timer = requires[Timer];
-  val epfd = requires[EventuallyPerfectFailureDetector]
-  val consensus = requires[SequenceConsensus];
+  //val epfd = requires[EventuallyPerfectFailureDetector]
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private var lut: Option[LookupTable] = None; // --> go to LookupTable
@@ -98,6 +96,17 @@ class VSOverlayManager extends ComponentDefinition {
         case None => log.info("Rejecting connection request from ${header.src}, as system is not ready, yet.");
       }
     }
+
+    case NetMessage(header,Suspect(p: NetAddress)) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      if (nodes.contains(p)) {
+        log.debug("Suspecting " + p + " triggering STOP proposal")
+        for (node <- group) {
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
+        }
+      }
+    }
   }
 
   route uponEvent {
@@ -111,12 +120,12 @@ class VSOverlayManager extends ComponentDefinition {
     }
   }
 
-  epfd uponEvent {
+  /*epfd uponEvent {
     case Suspect(p: NetAddress) => {
       val nodes = lut.get.getNodes();
       val group = lut.get.getNodesforGroup(p)
       if (nodes.contains(p)) {
-        log.debug("Suspecting " + p + " triggering deletion proposal")
+        log.debug("Suspecting " + p + " triggering STOP proposal")
         for (node <- group) {
           trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
         }
@@ -138,5 +147,5 @@ class VSOverlayManager extends ComponentDefinition {
     }*/
 
 
-  }
+  }*/
 }
