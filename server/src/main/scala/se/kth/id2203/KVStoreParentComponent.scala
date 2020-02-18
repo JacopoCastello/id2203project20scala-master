@@ -2,10 +2,10 @@ package se.kth.id2203
 
 import se.kth.id2203.bootstrapping.{Booted, Bootstrapping}
 import se.kth.id2203.consensus.{BallotLeaderElection, GossipLeaderElection, LeaderBasedSequencePaxos, SequenceConsensus}
-import se.kth.id2203.failuredetector.EPFD
+import se.kth.id2203.failuredetector.{EPFD, EventuallyPerfectFailureDetector}
 import se.kth.id2203.kvstore.KVService
 import se.kth.id2203.networking.NetAddress
-import se.kth.id2203.overlay.LookupTable
+import se.kth.id2203.overlay.{LookupTable, VSOverlayManager}
 import se.sics.kompics.Start
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
@@ -45,6 +45,7 @@ class KVParent extends ComponentDefinition {
       //EPFD
       connect[Network](net -> eventuallyPerfectFailureDetector)
       connect[Timer](timer -> eventuallyPerfectFailureDetector)
+
 
       // KV (the actual thing)
       connect[Network](net -> kv)

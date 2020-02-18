@@ -58,7 +58,7 @@ class VSOverlayManager extends ComponentDefinition {
   val boot = requires(Bootstrapping);
   val net = requires[Network];
   val timer = requires[Timer];
-  //val epfd = requires[EventuallyPerfectFailureDetector]
+  val epfd = requires[EventuallyPerfectFailureDetector]
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private var lut: Option[LookupTable] = None; // --> go to LookupTable
@@ -120,7 +120,7 @@ class VSOverlayManager extends ComponentDefinition {
     }
   }
 
-  /*epfd uponEvent {
+  epfd uponEvent {
     case Suspect(p: NetAddress) => {
       val nodes = lut.get.getNodes();
       val group = lut.get.getNodesforGroup(p)
@@ -147,5 +147,5 @@ class VSOverlayManager extends ComponentDefinition {
     }*/
 
 
-  }*/
+  }
 }

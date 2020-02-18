@@ -44,7 +44,7 @@ class ParentComponent extends ComponentDefinition {
     case Some(_) => create(classOf[BootstrapClient], Init.NONE); // start in client mode
     case None    => create(classOf[BootstrapServer], Init.NONE); // start in server mode
   }
-  val kvParent = create(classOf[KVParent], Init.NONE)
+  val kvParent = create(classOf[KVParent], Init.NONE);
 
 
   {
