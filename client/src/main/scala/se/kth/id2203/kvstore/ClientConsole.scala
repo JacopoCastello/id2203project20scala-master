@@ -50,16 +50,68 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
   }
 
   val opCommand = parsed(opParser, usage = "op <key>", descr = "Executes an op for <key>.") { key =>
-    println(s"Op with $key");
-
-    val fr = service.op(key); // call ClientService op(key)
+    println(s"Input for Op: $key");
+    
+    var input: Array[String] = key.split(" ")
+    var operationType = input(0).toUpperCase()
+    var size = input.length
+    
+   if(size < 2){ //Not sure it is necessary, probably the parser already handle it
+   println("Too few input fields provided");
+   }
+   else{
+   
+    var keyV = input(1)
+     
+     if(size == 2 && operationType == "GET"){
+       
+       val fr = service.op(Op(operationType, keyV, " ", " ")); // call ClientService op(key)
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);
-      out.println("Operation complete! Response was: " + r.status);
+      out.println("Operation complete! Response was: " + r.status + " Result was: " + r.value);
     } catch {
       case e: Throwable => logger.error("Error during op.", e);
     }
+     
+        
+   
+   }
+   
+   if(size == 3 && operationType == "PUT"){
+     
+     var valuePut = input(2)
+     
+     val fr = service.op(Op(operationType, keyV, valuePut, " ")); // call ClientService op(key)
+    out.println("Operation sent! Awaiting response...");
+    try {
+      val r = Await.result(fr, 5.seconds);
+      out.println("Operation complete! Response was: " + r.status + " Result was: " + r.value);
+    } catch {
+      case e: Throwable => logger.error("Error during op.", e);
+    }
+   
+   }
+   
+   if(size == 4 && operationType == "CAS"){
+     
+     var valueCas = input(2)
+     var expectedCas = input(3)
+     
+     val fr = service.op(Op(operationType, keyV, valuePut, expectedCas)); // call ClientService op(key)
+    out.println("Operation sent! Awaiting response...");
+    try {
+      val r = Await.result(fr, 5.seconds);
+      out.println("Operation complete! Response was: " + r.status + " Result was: " + r.value);
+    } catch {
+      case e: Throwable => logger.error("Error during op.", e);
+    }
+   
+   }
+    
+     
+   }
+    
   };
 
 }
