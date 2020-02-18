@@ -24,15 +24,15 @@
 package se.kth.id2203.overlay;
 
 import se.kth.id2203.bootstrapping._
-import se.kth.id2203.consensus.{SC_Propose, SequenceConsensus}
-import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
+import se.kth.id2203.consensus.SequenceConsensus
+import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Suspect}
 import se.kth.id2203.kvstore.Op
 import se.kth.id2203.networking._
-import se.sics.kompics.sl._
 import se.sics.kompics.network.Network
+import se.sics.kompics.sl._
 import se.sics.kompics.timer.Timer
 
-import util.Random;
+import scala.util.Random;
 
 /**
   * The V(ery)S(imple)OverlayManager.
@@ -111,27 +111,32 @@ class VSOverlayManager extends ComponentDefinition {
     }
   }
 
-  epfd uponEvent{
-    case Suspect(p:NetAddress) => {
+  epfd uponEvent {
+    case Suspect(p: NetAddress) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      if (nodes.contains(p)) {
+        log.debug("Suspecting " + p + " triggering deletion proposal")
+        for (node <- group) {
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
+        }
+      }
+    }
+
+    //Do we need a restore?
+
+    /* case Restore(p:NetAddress) => {
       val nodes = lut.get.getNodes();
       val group = lut.get.getNodesforGroup(p)
       if(nodes.contains(p)){
         log.debug("Suspecting " + p + " triggering deletion proposal")
+
         for (node <- group){
-          trigger(NetMessage(self, node, ) -> net);
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
         }
       }
+    }*/
 
-        trigger(SC_Propose(new Op("STOP", "", s"", "")) -> consensus)
-      }
-    }
 
-    case Restore(p:NetAddress) => handle{
-      if(nodes.contains(p) && newNodes == nodes){
-        log.debug("Restoring " + p + " triggering addition proposal")
-        trigger(C_Propose(nodes + p) -> paxos)
-        newNode(p)
-      }
-    }
-
+  }
 }
