@@ -98,7 +98,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
      var valueCas = input(2)
      var expectedCas = input(3)
      
-     val fr = service.op(Op(operationType, keyV, valuePut, expectedCas)); // call ClientService op(key)
+     val fr = service.op(Op(operationType, keyV, valueCas, expectedCas)); // call ClientService op(key)
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);
