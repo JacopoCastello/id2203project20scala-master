@@ -24,8 +24,7 @@
 package se.kth.id2203;
 
 import se.kth.id2203.bootstrapping._
-import se.kth.id2203.broadcast.{BEB, BestEffortBroadcast}
-import se.kth.id2203.consensus.Paxos
+
 import se.kth.id2203.failuredetector.EPFD
 import se.kth.id2203.kvstore.KVService
 import se.kth.id2203.networking.NetAddress
