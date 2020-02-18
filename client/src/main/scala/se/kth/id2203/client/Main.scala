@@ -23,19 +23,18 @@
  */
 package se.kth.id2203.client;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.UUID;
-import se.kth.id2203.networking._;
-import se.kth.id2203.kvstore.ClientConsole;
-import se.sics.kompics.Kompics;
-import se.sics.kompics.config._;
-import se.sics.kompics.network.netty.serialization.Serializers;
+import java.net.InetAddress
+import java.util.UUID
+
 import org.rogach.scallop._
-import org.apache.log4j.{Layout, LogManager, PatternLayout, WriterAppender};
+import se.kth.id2203.networking.{NetAddress, NetAddressConverter}
+import se.sics.kompics.Kompics
+import se.sics.kompics.config._
+import se.sics.kompics.network.netty.serialization.Serializers
+import se.kth.id2203.networking.ScallopConverters._;
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
-  import ScallopConverters._;
+
 
   version("Project18 Scala Client v1.0");
   banner("Usage: <call jar> [OPTIONS]");

@@ -23,11 +23,15 @@
  */
 package se.kth.id2203.overlay;
 
-import se.kth.id2203.bootstrapping._;
-import se.kth.id2203.networking._;
-import se.sics.kompics.sl._;
-import se.sics.kompics.network.Network;
-import se.sics.kompics.timer.Timer;
+import se.kth.id2203.bootstrapping._
+import se.kth.id2203.consensus.{SC_Propose, SequenceConsensus}
+import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
+import se.kth.id2203.kvstore.Op
+import se.kth.id2203.networking._
+import se.sics.kompics.sl._
+import se.sics.kompics.network.Network
+import se.sics.kompics.timer.Timer
+
 import util.Random;
 
 /**
@@ -40,6 +44,14 @@ import util.Random;
   * <p>
   * @author Lars Kroll <lkroll@kth.se>
   */
+
+object NodeUpdate {
+  sealed trait NodeUpdate;
+  case object Boot extends NodeUpdate;
+  case object Update extends NodeUpdate;
+}
+
+
 class VSOverlayManager extends ComponentDefinition {
 
   //******* Ports ******
@@ -47,6 +59,8 @@ class VSOverlayManager extends ComponentDefinition {
   val boot = requires(Bootstrapping);
   val net = requires[Network];
   val timer = requires[Timer];
+  val epfd = requires[EventuallyPerfectFailureDetector]
+  val consensus = requires[SequenceConsensus];
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private var lut: Option[LookupTable] = None; // --> go to LookupTable
@@ -96,4 +110,28 @@ class VSOverlayManager extends ComponentDefinition {
       trigger(NetMessage(self, target, msg) -> net);
     }
   }
+
+  epfd uponEvent{
+    case Suspect(p:NetAddress) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      if(nodes.contains(p)){
+        log.debug("Suspecting " + p + " triggering deletion proposal")
+        for (node <- group){
+          trigger(NetMessage(self, node, ) -> net);
+        }
+      }
+
+        trigger(SC_Propose(new Op("STOP", "", s"", "")) -> consensus)
+      }
+    }
+
+    case Restore(p:NetAddress) => handle{
+      if(nodes.contains(p) && newNodes == nodes){
+        log.debug("Restoring " + p + " triggering addition proposal")
+        trigger(C_Propose(nodes + p) -> paxos)
+        newNode(p)
+      }
+    }
+
 }

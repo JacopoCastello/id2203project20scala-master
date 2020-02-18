@@ -160,9 +160,5 @@ object SimpleScenario {
     startCluster andThen
       100.seconds afterTermination startClients andThen
       200.seconds afterTermination Terminate
-   /* networkSetup andThen
-      0.seconds afterTermination startCluster andThen
-      10.seconds afterTermination startClients andThen
-      100.seconds afterTermination Terminate*/
   }
 }

@@ -57,7 +57,7 @@ class GossipLeaderElection(init: Init[GossipLeaderElection]) extends ComponentDe
   private var period = 1500;
   private val ballots = mutable.Map.empty[NetAddress, Long];
 
-  private var round = 0l;
+  private var round = 0l; // --> has to be changed to (configuration, round number)
   private var ballot = ballotFromNAddress(0, self);
 
   private var leader: Option[(Long, NetAddress)] = None;

@@ -62,6 +62,7 @@ class KVService extends ComponentDefinition {
         case "GET" => log.info("Received operation GET from: " + src);
         case "PUT" => log.info("Received operation PUT from: " + src);
         case "CAS" => log.info("Received operation CAS from: " + src);
+        case "STOP" => log.info("Received operation STOP from: " + src);
       }
     }
       val opPropose = OperationToPropose(src.src, op)
