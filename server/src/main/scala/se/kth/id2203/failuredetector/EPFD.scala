@@ -106,10 +106,12 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
   net uponEvent {
 
     case NetMessage(src, HeartbeatRequest(seq)) =>  {
-      trigger(NetMessage(src, HeartbeatReply(seqnum)) -> net);
+      trigger(NetMessage(src, HeartbeatReply(seq)) -> net);
     }
     case NetMessage(src, HeartbeatReply(seq)) => {
-      if ((seq == seqnum) || suspected.contains(src.src)) alive = alive + src.src
+      if ((seq == seqnum) || suspected.contains(src.src)) {
+        alive = alive + src.src
+      }
     }
   }
 };

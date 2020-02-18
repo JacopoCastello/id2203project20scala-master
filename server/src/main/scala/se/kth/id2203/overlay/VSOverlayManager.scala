@@ -24,17 +24,15 @@
 package se.kth.id2203.overlay;
 
 import se.kth.id2203.bootstrapping._
-import se.kth.id2203.consensus.{SC_Propose, SequenceConsensus}
-import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
-import se.kth.id2203.kvstore.{Op, OpResponse, Operation}
+import se.kth.id2203.consensus.SequenceConsensus
+import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Suspect}
+import se.kth.id2203.kvstore.Op
 import se.kth.id2203.networking._
-import se.sics.kompics.KompicsEvent
-import se.sics.kompics.sl._
 import se.sics.kompics.network.Network
+import se.sics.kompics.sl._
 import se.sics.kompics.timer.Timer
 
-import scala.concurrent.Promise
-import util.Random;
+import scala.util.Random;
 
 /**
   * The V(ery)S(imple)OverlayManager.
@@ -52,9 +50,6 @@ object NodeUpdate {
   case object Boot extends NodeUpdate;
   case object Update extends NodeUpdate;
 }
-
-//case class OpWithPromise(op: Operation) extends KompicsEvent;
-
 
 
 class VSOverlayManager extends ComponentDefinition {
@@ -119,24 +114,29 @@ class VSOverlayManager extends ComponentDefinition {
   epfd uponEvent {
     case Suspect(p: NetAddress) => {
       val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
       if (nodes.contains(p)) {
-        val group = lut.get.getNodesforGroup(p)
         log.debug("Suspecting " + p + " triggering deletion proposal")
         for (node <- group) {
-          trigger(NetMessage(self, node, Op("STOP", "", "", "")) -> net);
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
         }
-        // todo: start a new node to replace the failed node
-        // todo: update lut once the new conf is running
       }
     }
-    case Restore(p: NetAddress) =>  {
-      /*val nodes = lut.get.getNodes();
-      if (nodes.contains(p) && newNodes == nodes) {
-        log.debug("Restoring " + p + " triggering addition proposal")
-        trigger(C_Propose(nodes + p) -> paxos)
-        newNode(p)
-      }*/
-    }
-  }
 
+    //Do we need a restore?
+
+    /* case Restore(p:NetAddress) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      if(nodes.contains(p)){
+        log.debug("Suspecting " + p + " triggering deletion proposal")
+
+        for (node <- group){
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
+        }
+      }
+    }*/
+
+
+  }
 }
