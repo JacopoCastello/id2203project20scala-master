@@ -75,9 +75,22 @@ class LookupTable extends NodeAssignment with Serializable {
     case (acc, kv) => acc ++ kv._2
   }
 
+  def getKeyforNode(node: NetAddress): Int = {
+      val entry =  partitions.filter(partition =>  partition._2.iterator.contains(node)).toList
+    if (entry.size>0) {
+      return entry(0)._1
+    }else{ //return -1 if node is not in lut
+      return -1
+    }
+  }
+
   def getNodes(): Set[NetAddress] = partitions.foldLeft(Set.empty[NetAddress]) {
     case (acc, kv) => acc ++ kv._2
   }
+
+
+
+
 
   override def toString(): String = {
     val sb = new StringBuilder();
@@ -86,7 +99,6 @@ class LookupTable extends NodeAssignment with Serializable {
     sb.append(")");
     return sb.toString();
   }
-
 }
 
 object LookupTable {
@@ -112,7 +124,12 @@ object LookupTable {
       }
     }
     lut
+  }
 
+  // add a node to a partition
+  def addNodetoGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
+    lut.partitions.put(partitionIdx -> node);
+    lut
   }
 }
 // todo: come up with a hash function and way to partition it: e.g. depending on the number of nodes available

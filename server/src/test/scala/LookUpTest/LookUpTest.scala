@@ -23,6 +23,8 @@ class LookUpTest extends FlatSpec {
   lut = LookupTable.generate(nodeset, rDegree);
   //print("Node assignment to partitions: " + lut + "\n")
 
+  var partitionForNode = lut.getNodesforGroup(adr1);
+
   "A LookUpTable" should "be creatable and include all nodes" in {
 
 
@@ -38,9 +40,19 @@ class LookUpTest extends FlatSpec {
   }
 
   it should "manage to lookup its group" in {
-    var partitionForNode = lut.getNodesforGroup(adr1);
+
     //print("Node1 is in partition: " + partitionForNode + " \n")
     assert(!partitionForNode.isEmpty)
+  }
+
+
+  it should "add nodes to groups" in {
+    var sizebefore = partitionForNode.size
+    var key = lut.getKeyforNode(adr1)
+    //print("Node1 is in partition: " + key + " \n")
+    var adr8 = NetAddressConverter.convert("127.0.0.1:56888");
+    lut = LookupTable.addNodetoGroup(adr8, key, lut)
+    assert(lut.getNodesforGroup(adr1).size == sizebefore+1)
   }
 
 }
