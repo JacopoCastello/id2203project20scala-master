@@ -25,7 +25,9 @@ package se.kth.id2203.consensus
 import se.sics.kompics.sl._
 import se.sics.kompics.KompicsEvent
 
-  trait RSM_Command
+  trait RSM_Command {
+    def isRead: Boolean
+  }
 
   case class SC_Propose(value: RSM_Command) extends KompicsEvent;
   case class SC_Decide(value: RSM_Command) extends KompicsEvent;

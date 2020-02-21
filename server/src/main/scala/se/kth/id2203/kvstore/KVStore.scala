@@ -36,7 +36,9 @@ trait ProposedOpTrait extends RSM_Command {
   def command: Operation
 }
 
-case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait
+case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait {
+  override def isRead: Boolean = command.opType.equalsIgnoreCase("GET")
+}
 
 class KVService extends ComponentDefinition {
 

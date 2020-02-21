@@ -27,6 +27,7 @@ import se.kth.id2203.networking.{NetAddress, NetMessage}
 import se.sics.kompics.sl._
 import se.sics.kompics.network._
 import se.sics.kompics.KompicsEvent
+import se.sics.kompics.timer.{ScheduleTimeout, Timeout, Timer}
 
 import scala.collection.mutable
 
@@ -41,6 +42,10 @@ import scala.collection.mutable
   case class Accepted(nL: Long, m: Int) extends KompicsEvent;
 
   case class Decide(ld: Int, nL: Long) extends KompicsEvent;
+
+  //  Added for the LL
+  case class Nack(n: Long) extends KompicsEvent
+  case class ReplyToNackTimeout(p: NetAddress, nL: Long, ld: Int, na: Long, timeout: ScheduleTimeout) extends Timeout(timeout)
 
   object State extends Enumeration {
     type State = Value;
@@ -63,11 +68,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     val ble = requires[BallotLeaderElection];
     //val pl: Nothing = requires(FIFOPerfectLink)
     val net = requires[Network]
+    val topo = requires[Topology];  //  Added for LL
+    val timer = requires[Timer];  //  Added for LL
 
-    val (self, pi, others) = init match {
-      case Init(addr: NetAddress, pi: Set[NetAddress] @unchecked) => (addr, pi, pi - addr)
-    }
-    val majority = (pi.size / 2) + 1;
+  var (self, pi, others) = init match {
+    case Init(addr: NetAddress, pi: Set[NetAddress]@unchecked) => (addr, pi, pi - addr)
+  }
+  var majority = (pi.size / 2) + 1;
 
     var state = (FOLLOWER, UNKNOWN);
     var nL = 0l;
@@ -87,6 +94,52 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     var lc = 0;
     val acks = mutable.Map.empty[NetAddress, (Long, List[RSM_Command])];
 
+  // lease
+  val leaseDuration = cfg.getValue[Long]("id2203.project.leaseDuration")
+  val clockError = cfg.getValue[Long]("id2203.project.clock.error")
+  var tprom = 0l
+  var tl = 0l
+  var hasGivenAnyLease = false
+  var nacks = 0
+
+  //  Added for LL
+
+  def clockTime: Long = {
+    System.currentTimeMillis()
+  }
+
+  def canGiveLease(n: Long): Boolean = {
+    if(n <= nProm) {
+      return false
+    }
+    if(!hasGivenAnyLease) {
+      true
+    } else {
+      (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0
+    }
+  }
+
+  def canReplyWithLocalState(c: RSM_Command): Boolean = {
+    if(!c.isRead) {
+      return false
+    }
+    if(state != (LEADER, ACCEPT)) {
+      return false
+    }
+    (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
+  }
+
+  topo uponEvent {
+    case PartitionTopology(nodes: Set[NetAddress]) =>  {
+      pi = nodes
+      others = pi - self
+      majority = (pi.size / 2) + 1
+    }
+  }
+
+
+  /////
+
     def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
       s.drop(l)
     }
@@ -102,6 +155,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           leader = Some(l);
           nL = n;
           if (self == l && nL > nProm){
+            println(clockTime/1000) //  Added for LL
             log.info(s"The leader is host: [$self]\n")
             state = (LEADER, PREPARE);
             propCmds = List.empty[RSM_Command];
@@ -109,11 +163,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             lds.clear();
             acks.clear();
             lc = 0;
+            tl = clockTime; //  Added for LL
+            nacks = 0;  //  Added for LL
             for (p <- others){
               trigger(NetMessage(self, p, Prepare(nL, ld, na)) -> net);
             }
-            acks(l) = (na, suffix(va, ld));
-            lds(self) = ld;
+            acks(l) = (na, suffix(va, ld)); //  In LL is a bit different
+            lds(self) = ld; //  In LL is a bit different
             nProm = nL;
           } else{
             state = (FOLLOWER, state._2);
@@ -124,14 +180,23 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     net uponEvent {
       case NetMessage(p, Prepare(np, ldp, n)) => {
-        if (nProm < np){
+        //  Modified for LL
+        if (canGiveLease(np)) {
+          hasGivenAnyLease = true;
+          tprom = clockTime;
           nProm = np;
           state = (FOLLOWER, PREPARE);
           var sfx = List.empty[RSM_Command];
-          if (na >= n){
-            sfx = suffix(va,ld);
+          if (na >= n) {
+            sfx = suffix(va, ld);
           }
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
+
+        } else {
+          // if the only reason a promise wasn't given is the lease violation, then ask to try again later
+          if (np > nProm && (clockTime - tprom) <= leaseDuration * (1000 + clockError) / 1000.0) {
+            trigger(NetMessage(self, p.src, Nack(np)) -> net);
+          }
         }
       }
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
@@ -141,15 +206,15 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           acks(a.src) = (na, sfxa);
           lds(a.src) = lda;
           val P: Set[NetAddress] = pi.filter(x => acks.get(x) != None);
-          if (P.size == (pi.size+1)/2) {
-            var ack = P.iterator.reduceLeft((v1,v2) => if (acks(v1)._2.size > acks(v2)._2.size) v1 else v2);
+          if (P.size >= (pi.size + 1) / 2) { //  Modified for LL
+            var ack = P.iterator.reduceLeft((v1, v2) => if (acks(v1)._2.size > acks(v2)._2.size) v1 else v2);
             var (k, sfx) = acks(ack);
             va = prefix(va, ld) ++ sfx ++ propCmds;
             las(self) = va.size;
             propCmds = List.empty;
             state = (LEADER, ACCEPT);
-            for (p <- others.filter(x => lds.get(x) != None)){
-              var sfxp = suffix(va,lds(p));
+            for (p <- others.filter(x => lds.get(x) != None)) {
+              var sfxp = suffix(va, lds(p));
               trigger(NetMessage(self, p, AcceptSync(nL, sfxp, lds(p))) -> net);
             }
           }
@@ -157,17 +222,25 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           log.info(s"Late request for Promise from: ${a.src}")
 
           lds(a.src) = lda;
-          var sfx = suffix(va,lds(a.src));
+          var sfx = suffix(va, lds(a.src));
           trigger(NetMessage(self, a.src, AcceptSync(nL, sfx, lds(a.src))) -> net);
-          if (lc != 0){
+          if (lc != 0) {
             trigger(NetMessage(self, a.src, Decide(ld, nL)) -> net);
           }
+        }
+      }
+      case NetMessage(header, Nack(n)) => {
+        val p = header.src
+        if (n == nL && state == (LEADER, PREPARE)) {
+          val scheduledTimeout = new ScheduleTimeout(500)
+          scheduledTimeout.setTimeoutEvent(ReplyToNackTimeout(p, nL, ld, na, scheduledTimeout))
+          trigger(scheduledTimeout -> timer)
         }
       }
       case NetMessage(p, AcceptSync(nL, sfx, ldp)) => {
         if ((nProm == nL) && (state == (FOLLOWER, PREPARE))) {
           na = nL;
-          va = prefix(va,ldp) ++ sfx;
+          va = prefix(va, ldp) ++ sfx;
           trigger(NetMessage(self, p.src, Accepted(nL, va.size)) -> net);
           state = (FOLLOWER, ACCEPT);
         }
@@ -179,8 +252,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       }
       case NetMessage(_, Decide(l, nL)) => {
-        if (nProm == nL){
-          while (ld < l){
+        if (nProm == nL) {
+          while (ld < l) {
             trigger(SC_Decide(va(ld)) -> sc);
             ld = ld + 1;
           }
@@ -189,31 +262,44 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(a, Accepted(n, m)) => {
         if ((n == nL) && (state == (LEADER, ACCEPT))) {
           las(a.src) = m;
-          var x =  pi.filter(x => las.getOrElse(x, 0) >= m);
-          if (lc < m && x.size >= (pi.size+1)/2){
+          var x = pi.filter(x => las.getOrElse(x, 0) >= m);
+          if (lc < m && x.size >= (pi.size + 1) / 2) {
             lc = m;
-            for (p <- pi.filter(x => lds.get(x) != None)){
+            for (p <- pi.filter(x => lds.get(x) != None)) {
               trigger(NetMessage(self, p, Decide(lc, nL)) -> net);
             }
           }
         }
       }
+    }
 
-        sc uponEvent {
-          case SC_Propose(c) => {
-            log.info(s"The command {} was proposed!", c)
-            log.info(s"The current state of the node is {}", state)
-            if (state == (LEADER, PREPARE)) {
-              propCmds = propCmds ++ List(c);
-            }
-            else if (state == (LEADER, ACCEPT)) {
-              va = va ++ List(c);
-              las(self) = las(self) + 1;
-              for (p <- others.filter(x =>  lds.get(x) != None)){
-                trigger(NetMessage(self, p, Accept(nL, c)) -> net);
-              }
-            }
+  timer uponEvent {
+    case ReplyToNackTimeout(p, _nL, _ld, _na, _) =>  {
+      trigger(NetMessage(self, p, Prepare(_nL, _ld, _na)) -> net)
+    }
+  }
+
+  sc uponEvent {
+    case SC_Propose(c) => {
+      log.info(s"The command {} was proposed!", c)
+      log.info(s"The current state of the node is {}", state)
+
+      if (canReplyWithLocalState(c)) {
+        trigger(SC_Decide(c) -> sc);
+      } else {
+        if (state == (LEADER, PREPARE)) {
+          propCmds = propCmds ++ List(c);
+        }
+        else if (state == (LEADER, ACCEPT)) {
+          va = va ++ List(c);
+          las(self) = las(self) + 1;
+          for (p <- others.filter(x =>  lds.get(x) != None)){
+            trigger(NetMessage(self, p, Accept(nL, c)) -> net);
           }
         }
+      }
+
     }
+  }
+
 }
