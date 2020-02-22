@@ -28,8 +28,8 @@ import se.kth.id2203.kvstore.{Operation, OperationToPropose}
 import se.kth.id2203.networking.NetAddress
 
   trait RSM_Command{
-    def source: NetAddress
-    def command: Operation
+   // def source: NetAddress
+  //  def command: Operation
   }
 
   case class SC_Propose(value: RSM_Command) extends KompicsEvent;

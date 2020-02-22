@@ -121,10 +121,11 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
   // fun stopped
   def stopped(): Boolean = {
-    if(va(ld).command.key.equals("STOP")) {
+   /* if(va(ld).command.key.equals("STOP")) {
       log.info(s"PAXOS finds STOP in final sequence: \n")
     }
-    (va(ld).command.key.equals("STOP"))
+    (va(ld).command.key.equals("STOP"))*/
+    false
   }
 
     ble uponEvent { // updated for reconfig
