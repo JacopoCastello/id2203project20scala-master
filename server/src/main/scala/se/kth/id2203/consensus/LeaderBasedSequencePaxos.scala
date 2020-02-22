@@ -31,17 +31,17 @@ import se.sics.kompics.KompicsEvent
 
 import scala.collection.mutable
 
-  case class Prepare(nL: (Int,Int) , ld: Int, na: (Int,Int) )extends KompicsEvent;
+  case class Prepare(nL: (Int,Long) , ld: Int, na: (Int,Long) )extends KompicsEvent;
 
-  case class Promise(nL: (Int,Int), na: (Int,Int), suffix: List[RSM_Command], ld: Int) extends KompicsEvent;
+  case class Promise(nL: (Int,Long), na: (Int,Long), suffix: List[OperationToPropose], ld: Int) extends KompicsEvent;
 
-  case class AcceptSync(nL: (Int, Int), suffix: List[RSM_Command], ld: Int) extends KompicsEvent;
+  case class AcceptSync(nL: (Int, Long), suffix: List[OperationToPropose], ld: Int) extends KompicsEvent;
 
-  case class Accept(nL: (Int, Int), c: RSM_Command) extends KompicsEvent;
+  case class Accept(nL: (Int, Long), c: OperationToPropose) extends KompicsEvent;
 
-  case class Accepted(nL: (Int, Int), m: Int) extends KompicsEvent;
+  case class Accepted(nL: (Int, Long), m: Int) extends KompicsEvent;
 
-  case class Decide(ld: Int, nL: (Int, Int)) extends KompicsEvent;
+  case class Decide(ld: Int, nL: (Int, Long)) extends KompicsEvent;
 
   object State extends Enumeration {
     type State = Value;
@@ -60,32 +60,33 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     import Role._
     import State._
 
-    // reconfig
-    var sigma = List.empty[RSM_Command];
 
+  val (self, pi, c, rself, ri, rothers, others) = init match {
+    case Init(addr: NetAddress,
+    pi: Set[NetAddress] @unchecked, // set of processes in config c
+    c: Int, // configuration c
+    rself: (NetAddress, Int), // Repnumber of this one
+    ri:mutable.Map[NetAddress, Int]) // set of replicas in config c (ip:port, Repnumber
+    => (addr, pi, c, rself, ri, ri-addr, pi - addr)//c = configuration i, ri: RID = Netaddr of process, id
+  }
 
   val sc = provides[SequenceConsensus];
-    val ble = requires[BallotLeaderElection];
-    //val pl: Nothing = requires(FIFOPerfectLink)
-    val net = requires[Network]
+  val ble = requires[BallotLeaderElection];
+  //val pl: Nothing = requires(FIFOPerfectLink)
+  val net = requires[Network]
+  // val majority = (pi.size / 2) + 1;
 
-    val (self, pi, others, c, rself, ri, rothers) = init match {
-      case Init(addr: NetAddress,
-      pi: Set[NetAddress] @unchecked, // set of processes in config c
-      c: Int, // configuration c
-      rself: (NetAddress, Int), // Repnumber of this one
-      ri:mutable.Map[NetAddress, Int], // set of replicas in config c (ip:port, Repnumber)
-      rothers:mutable.Map[NetAddress, Int]) // set of replicas in config c without this one
-      => (addr, pi, pi - addr, c, rself, ri, ri-addr)//c = configuration i, ri: RID = Netaddr of process, id
-    }
-    val majority = (pi.size / 2) + 1;
 
+    // reconfig
+    var sigma = List.empty[OperationToPropose]; // the final sequence from the previous configuration or hi if   i = 0
     var state = (FOLLOWER, UNKNOWN);
+
+
   var leader: Option[NetAddress] = None;
 
   // proposer state
-    var nL= (c,0);
-  val promises = mutable.Map.empty[Int, ((Int, Int), List[RSM_Command])];
+  var nL= (c,0l);
+  val promises = mutable.Map.empty[Int, ((Int, Long), List[OperationToPropose])];
   val las = mutable.Map.empty[NetAddress, Int];
   val lds = mutable.Map.empty[(NetAddress, Int), Int];
   for (p <- pi){
@@ -94,24 +95,24 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   for (r <- ri){
     lds += (r -> 0);
   }
-  var propCmds = List.empty[RSM_Command];
+  var propCmds = List.empty[OperationToPropose];
   var lc = sigma.size;
 
   // acceptor state
-  var nProm = (c,0);
-  var na = (c,0);
+  var nProm = (c,0l);
+  var na = (c,0l);
   var va = sigma;
 
   // learner state
   var ld = sigma.size
   // todo: How to compare the SSi and what is SSi??
-  var SSi = OperationToPropose(_, Op("STOP", "","",""))
+ var SSi =  OperationToPropose(_, Op("STOP", "","",""))
 
-  def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
+  def suffix(s: List[OperationToPropose], l: Int): List[OperationToPropose] = {
       s.drop(l)
     }
 
-    def prefix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
+    def prefix(s: List[OperationToPropose], l: Int): List[OperationToPropose] = {
       s.take(l)
     }
 
@@ -119,7 +120,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
   // fun stopped
   def stopped(): Boolean = {
-    return (va.last.equals(SSi)); //??
+    if (va(ld).equals(SSi)) {
+      log.info(s"PAXOS finds STOP in final sequence\n")
+    }
+    return va(ld).equals(SSi) //??
   }
 
     ble uponEvent { // updated for reconfig
@@ -131,7 +135,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           nL = n;*/
           if (self == l && (n._1 == nL._1 && n._2 > nL._2)){ // what to compare?
             log.info(s"The leader is host: [$self]\n")
-            (nL, nProm) = (n,n)
+            nL = n
+            nProm = n
             state = (LEADER, PREPARE);
             promises += (rself._2 -> (na, suffix(va, ld)))// data structure
             //propCmds = List.empty[RSM_Command];
@@ -158,11 +163,15 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   // upon preparereq
 
   net uponEvent {
+    //case NetMessage(p, ConnectionStatus(q)) => {
+
+   // }
+
       case NetMessage(p, Prepare(np, ldp, n)) => {
         if (nProm._1 == np._1 && nProm._2 > np._2){
           nProm = np;
           state = (FOLLOWER, PREPARE);
-          var sfx = List.empty[RSM_Command];
+          var sfx = List.empty[OperationToPropose];
           if (na._1 == n._1 && na._2 >= n._2 ){
             sfx = suffix(va,ld);
           }
@@ -184,14 +193,17 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
             if (SSi == va.last) {
               propCmds = List.empty;
-            } else if (propCmds.contains(SSi)) { // odering SSi as the last one to add to va
-                for (c <- (propCmds - SSi)) {
-                  va += c
+            } else if (propCmds.contains(SSi)) { // ordering SSi as the last one to add to va
+              var stop = propCmds.filter(_ ==SSi)
+              propCmds = propCmds.filter(_ !=SSi)
+
+              for (c <- propCmds) {
+                  va = va  ++ List(c)
                 }
-                va += SSi
+                va = va ++ stop
               } else {
               for (c <- propCmds) {
-                va += c
+                va = va  ++ List(c)
               }
             }
             las(self) = va.size;

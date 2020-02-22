@@ -127,7 +127,7 @@ class VSOverlayManager extends ComponentDefinition {
       if (nodes.contains(p)) {
         log.debug("Suspecting " + p + " triggering STOP proposal")
         for (node <- group) {
-          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
+          trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
         }
       }
     }

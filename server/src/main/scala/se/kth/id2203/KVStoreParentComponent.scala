@@ -11,6 +11,8 @@ import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
 import se.sics.kompics.timer.Timer
 
+import scala.collection.mutable
+
 class KVParent extends ComponentDefinition {
 
   val boot: PositivePort[Bootstrapping.type] = requires(Bootstrapping)
@@ -23,8 +25,16 @@ class KVParent extends ComponentDefinition {
       val topology: Set[NetAddress] = assignment.getNodesforGroup(self)
       //val topology = assignment.getNodes()
 
+      // iniial creation configuration 0
+      val c = 0;
+      val ri = mutable.Map.empty[NetAddress, Int];
+      for (node <- topology){
+        ri += (node -> c)
+      }
+
+
       val kv = create(classOf[KVService], Init.NONE)
-      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology))
+      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c),ri ))
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
       val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology))
 

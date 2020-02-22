@@ -24,11 +24,14 @@
 package se.kth.id2203.consensus
 import se.sics.kompics.sl._
 import se.sics.kompics.KompicsEvent
+import se.kth.id2203.kvstore.OperationToPropose
 
-  trait RSM_Command
+  trait RSM_Command {
+    def op: OperationToPropose
+  }
 
-  case class SC_Propose(value: RSM_Command) extends KompicsEvent;
-  case class SC_Decide(value: RSM_Command) extends KompicsEvent;
+  case class SC_Propose(value: OperationToPropose) extends KompicsEvent;
+  case class SC_Decide(value: OperationToPropose) extends KompicsEvent;
 
   class SequenceConsensus extends Port {
     request[SC_Propose];

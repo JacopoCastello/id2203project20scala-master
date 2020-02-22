@@ -31,13 +31,16 @@ import se.sics.kompics.sl._
 
 import scala.collection.mutable;
 
-trait ProposedOpTrait extends RSM_Command {
+trait ProposedOpTrait {
   def source: NetAddress
   def command: Operation
+  /*def confReplicagroup: Set[NetAddress]
+  def confNumber: Int
+  def confRID: mutable.Map[NetAddress, Int]*/
 }
 
+//case class OperationToPropose(source: NetAddress, command: Operation, confReplicagroup: Set[NetAddress], confNumber: Int, confRID: mutable.Map[NetAddress, Int]) extends ProposedOpTrait
 case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait
-
 class KVService extends ComponentDefinition {
 
   //******* Ports ******
@@ -65,10 +68,22 @@ class KVService extends ComponentDefinition {
         case "STOP" => log.info("Received operation STOP from: " + src);
       }
     }
+
       val opPropose = OperationToPropose(src.src, op)
       trigger(SC_Propose(opPropose) -> consensus)
       log.info("Triggering the operation: " + src);
-    }
+  }
+/*
+  if (op.opType.equals("STOP")) {
+        val opPropose = OperationToPropose(src.src, op, _,_,_)
+        trigger(SC_Propose(opPropose) -> consensus)
+        log.info("Triggering the STOP operation for config : " + src);
+      } else {
+        val opPropose = OperationToPropose(src.src, op, _, _, _)
+        trigger(SC_Propose(opPropose) -> consensus)
+        log.info("Triggering the operation: " + src);
+      }
+  }*/
 
 
 
