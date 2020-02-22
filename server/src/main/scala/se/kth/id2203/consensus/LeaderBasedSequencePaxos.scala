@@ -33,11 +33,11 @@ import scala.collection.mutable
 
   case class Prepare(nL: (Int,Long) , ld: Int, na: (Int,Long) )extends KompicsEvent;
 
-  case class Promise(nL: (Int,Long), na: (Int,Long), suffix: List[OperationToPropose], ld: Int) extends KompicsEvent;
+  case class Promise(nL: (Int,Long), na: (Int,Long), suffix: List[RSM_Command], ld: Int) extends KompicsEvent;
 
-  case class AcceptSync(nL: (Int, Long), suffix: List[OperationToPropose], ld: Int) extends KompicsEvent;
+  case class AcceptSync(nL: (Int, Long), suffix: List[RSM_Command], ld: Int) extends KompicsEvent;
 
-  case class Accept(nL: (Int, Long), c: OperationToPropose) extends KompicsEvent;
+  case class Accept(nL: (Int, Long), c: RSM_Command) extends KompicsEvent;
 
   case class Accepted(nL: (Int, Long), m: Int) extends KompicsEvent;
 
@@ -50,6 +50,7 @@ import scala.collection.mutable
 
   object Role extends Enumeration {
     type Role = Value;
+
     val LEADER, FOLLOWER = Value;
   }
 
@@ -78,7 +79,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
 
     // reconfig
-    var sigma = List.empty[OperationToPropose]; // the final sequence from the previous configuration or hi if   i = 0
+    var sigma = List.empty[RSM_Command]; // the final sequence from the previous configuration or hi if   i = 0
     var state = (FOLLOWER, UNKNOWN);
 
 
@@ -86,7 +87,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
   // proposer state
   var nL= (c,0l);
-  val promises = mutable.Map.empty[Int, ((Int, Long), List[OperationToPropose])];
+  val promises = mutable.Map.empty[Int, ((Int, Long), List[RSM_Command])];
   val las = mutable.Map.empty[NetAddress, Int];
   val lds = mutable.Map.empty[(NetAddress, Int), Int];
   for (p <- pi){
@@ -95,7 +96,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   for (r <- ri){
     lds += (r -> 0);
   }
-  var propCmds = List.empty[OperationToPropose];
+  var propCmds = List.empty[RSM_Command];
   var lc = sigma.size;
 
   // acceptor state
@@ -106,13 +107,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   // learner state
   var ld = sigma.size
   // todo: How to compare the SSi and what is SSi??
- var SSi =  OperationToPropose(_, Op("STOP", "","",""))
+ var SSi =  Op("STOP", "","","")
 
-  def suffix(s: List[OperationToPropose], l: Int): List[OperationToPropose] = {
+  def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
       s.drop(l)
     }
 
-    def prefix(s: List[OperationToPropose], l: Int): List[OperationToPropose] = {
+    def prefix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
       s.take(l)
     }
 
@@ -120,10 +121,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
   // fun stopped
   def stopped(): Boolean = {
-    if (va(ld).equals(SSi)) {
-      log.info(s"PAXOS finds STOP in final sequence\n")
+    if(va(ld).command.key.equals("STOP")) {
+      log.info(s"PAXOS finds STOP in final sequence: \n")
     }
-    return va(ld).equals(SSi) //??
+    (va(ld).command.key.equals("STOP"))
   }
 
     ble uponEvent { // updated for reconfig
@@ -171,7 +172,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         if (nProm._1 == np._1 && nProm._2 > np._2){
           nProm = np;
           state = (FOLLOWER, PREPARE);
-          var sfx = List.empty[OperationToPropose];
+          var sfx = List.empty[RSM_Command];
           if (na._1 == n._1 && na._2 >= n._2 ){
             sfx = suffix(va,ld);
           }

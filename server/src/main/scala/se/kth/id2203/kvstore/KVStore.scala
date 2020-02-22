@@ -31,7 +31,7 @@ import se.sics.kompics.sl._
 
 import scala.collection.mutable;
 
-trait ProposedOpTrait {
+trait ProposedOpTrait extends RSM_Command {
   def source: NetAddress
   def command: Operation
   /*def confReplicagroup: Set[NetAddress]
