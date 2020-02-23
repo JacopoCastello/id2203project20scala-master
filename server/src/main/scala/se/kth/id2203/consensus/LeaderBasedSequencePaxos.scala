@@ -26,7 +26,7 @@ package se.kth.id2203.consensus
 import se.kth.id2203.networking.{NetAddress, NetMessage}
 import se.sics.kompics.sl._
 import se.sics.kompics.network._
-import se.sics.kompics.KompicsEvent
+import se.sics.kompics.{KompicsEvent, Start}
 
 import scala.collection.mutable
 import se.kth.id2203.kvstore.{Op, OperationToPropose}
@@ -62,22 +62,25 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     val sc = provides[SequenceConsensus];
     val ble = requires[BallotLeaderElection];
-    //val pl: Nothing = requires(FIFOPerfectLink)
     val net = requires[Network]
 
   // initialize
   val (self, pi, c, rself, ri, rothers, others) = init match {
-    case Init(addr: NetAddress,
-    pi: Set[NetAddress] @unchecked, // set of processes in config c
-    c: Int, // configuration c
-    rself: (NetAddress, Int), // Repnumber of this one
-    ri:mutable.Map[NetAddress, Int]) // set of replicas in config c (ip:port, Repnumber
-    => (addr, pi, c, rself, ri, ri-addr, pi - addr)//c = configuration i, ri: RID = Netaddr of process, id
+    case Init(
+    addr: NetAddress,
+    c: Int,                                              // configuration c
+    pi: Set[NetAddress] @unchecked,                     // set of processes in config c
+    ri:mutable.Map[NetAddress, Int],                   // set of replicas in config c (ip:port, Repnumber
+    rself: (NetAddress, Int))                          // Repnumber of this one
+    => (addr, pi, c, rself, ri, ri-addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
   }
-    //val majority = (pi.size / 2) + 1;
+
 
   // reconfig
-  var sigma = List.empty[RSM_Command]; // the final sequence from the previous configuration or hi if   i = 0
+
+
+  var sigma = List.empty[RSM_Command];                // the final sequence from the previous configuration or () if i = 0
+
   var state = (FOLLOWER, UNKNOWN);
 
   var leader: Option[NetAddress] = None;
@@ -278,6 +281,11 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
               }
             }
           }
+        /*  case SC_Handover(src,configuration, previous_finalsequence) => {
+            if(src == self && configuration < c && sigma.isEmpty){
+              sigma = previous_finalsequence
+            }
+          } */
         }
 
 }
