@@ -108,7 +108,6 @@ class KVService extends ComponentDefinition {
               if (command.expected != "" && command.expected == value) {
                 storage(command.key) = command.value
               }
-
               value
             }
             case None => {
@@ -116,7 +115,6 @@ class KVService extends ComponentDefinition {
               if (command.expected.isEmpty) {
                 storage += (command.key -> command.value)
               }
-
               None
             }
           }
