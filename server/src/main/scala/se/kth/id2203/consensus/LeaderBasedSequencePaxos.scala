@@ -129,9 +129,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   }
 
     def compareGreaterPromises(x: ((Int, Long), List[RSM_Command]), y: ((Int, Long), List[RSM_Command])): Boolean = {
-      if (compareGreater(x._1, y._1)) { // suffix with max n
-        true
-      } else if (x == y && x._2.size > y._2.size) { //longest suffix if equal
+      if (compareGreater(x._1, y._1) || (x == y && x._2.size > y._2.size)) { // suffix with max n
         true
       } else {
         false
