@@ -135,6 +135,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   }
 
 
+
     ble uponEvent {
       case BLE_Leader(l, b) => {
         log.info(s"Proposing leader: $l [$self] \n")
@@ -189,8 +190,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           //val P: Set[NetAddress] = pi.filter(x =>  promises((a.src,ri(a.src))) != None);
           val P = pi.filter(x => promises.contains(x, c));
           if (P.size == (pi.size + 1) / 2) {
-            var ack = P.iterator.reduceLeft((v1, v2) => if (promises(v1,ri(v1))._2.size > promises(v2,ri(v2))._2.size) v1 else v2);
-            var (k, sfx) = promises(ack,ri(ack));
+            var ack = P.iterator.reduceLeft((v1, v2) => if (promises(v1, ri(v1))._2.size > promises(v2, ri(v2))._2.size) v1 else v2);
+            var (k, sfx) = promises(ack, ri(ack));
             //var (k, sfx) = promises(P.maxBy(item => promises(item,c)._2.size)); //what to compare in acks??
             //val sfx = promises.values.maxBy(_._1)._2
             //va = prefix(va, ld) ++ sfx ++ propCmds;
@@ -265,23 +266,22 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
         }
       }
-
-
+    }
         sc uponEvent {
-          case SC_Propose(c) => {
+          case SC_Propose(scp) => { //todo: the problem here is that what it receives does not match with this (I don't understand why)
             log.info(s"The command {} was proposed!", c)
             log.info(s"The current state of the node is {}", state)
             if (state == (LEADER, PREPARE)) {
-              propCmds = propCmds ++ List(c);
+              propCmds = propCmds ++ List(scp);
             }
             else if (state == (LEADER, ACCEPT) && !stopped()) {
-              va = va ++ List(c);
+              va = va ++ List(scp);
               las(rself) = va.size;
               for (r <- rothers.filter(x =>  lds.get(x) != 0)){
-                trigger(NetMessage(self, r._1, Accept(nL, c)) -> net);
+                trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
               }
             }
           }
         }
-    }
+
 }

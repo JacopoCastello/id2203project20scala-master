@@ -22,20 +22,20 @@
  * THE SOFTWARE.
  */
 package se.kth.id2203.consensus
+import se.kth.id2203.kvstore.Operation
+import se.kth.id2203.networking.NetAddress
 import se.sics.kompics.sl._
 import se.sics.kompics.KompicsEvent
 
-import se.kth.id2203.kvstore.{Operation}
-import se.kth.id2203.networking.NetAddress
-
 trait RSM_Command{
-   def source: NetAddress
-   def command: Operation
+  def source: NetAddress
+  def command: Operation
 }
-  case class SC_Propose(value: RSM_Command) extends KompicsEvent;
-  case class SC_Decide(value: RSM_Command) extends KompicsEvent;
 
-  class SequenceConsensus extends Port {
-    request[SC_Propose];
-    indication[SC_Decide];
-  }
+case class SC_Propose(value: RSM_Command) extends KompicsEvent;
+case class SC_Decide(value: RSM_Command) extends KompicsEvent;
+
+class SequenceConsensus extends Port {
+  request[SC_Propose];
+  indication[SC_Decide];
+}
