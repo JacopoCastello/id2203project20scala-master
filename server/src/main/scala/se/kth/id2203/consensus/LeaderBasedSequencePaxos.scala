@@ -90,7 +90,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   val lds = mutable.Map.empty[(NetAddress, Int), Int]; // length of longest known decided sequence per acceptor
   for (r <- ri){
     las += (r -> sigma.size)
-    lds += (r -> 0);
+    lds += (r -> -1);
   }
   var propCmds = List.empty[RSM_Command]; //set of commands that need to be appended to the log
   var lc = sigma.size; //length of longest chosen sequence *
@@ -141,18 +141,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         log.info(s"Proposing leader: $l [$self] \n")
         println(nL)
         var n = (c,b)
-        if (self.equals(l) && compareGreater(n,nL)){
-          //leader = Some(l);
-          //nL = n;
-          //if (self == l && nL > nProm){
+        if (self == l && compareGreater(n,nL)){
           log.info(s"The leader is host: [$self]\n")
           nL = n
           nProm = n
-          promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))   // data structure
-          //propCmds = List.empty[RSM_Command];
+          promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))   // add or only entry?
           for (r <- ri){
             las += (r -> sigma.size);
-            lds += (r -> 0);
+            lds += (r -> -1);
           }
           lds(rself) = ld;
           lc = sigma.size;
@@ -197,8 +193,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             //va = prefix(va, ld) ++ sfx ++ propCmds;
             va = prefix(va, ld) ++ sfx
 
-            if (va.last.command == "STOP") {
-              propCmds = List.empty; //* commands will never be decided
+           /* if (va.last.command == "STOP") {
+              propCmds = List.empty; // commands will never be decided
             } else if (propCmds.contains(Op("STOP", "", "", ""))) { // ordering SSi as the last one to add to va
               var stop = propCmds.filter(x => x.command == "STOP")
               propCmds = propCmds.filter(x => x.command != "STOP")
@@ -207,16 +203,16 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
                 va = va ++ List(c)
               }
               va = va ++ stop
-            } else {
+            } else {*/
               for (c <- propCmds) {
                 va = va ++ List(c)
               }
-            }
+            //}
             las((self, c)) = va.size;
             //propCmds = List.empty;
             state = (LEADER, ACCEPT);
 
-            for (r <- rothers.filter(x => lds(x) != 0 && lds(x) != va.size)) {
+            for (r <- rothers.filter(x => lds(x) != -1 && lds(x) != va.size)) {
               var sfxp = suffix(va, lds(r));
               trigger(NetMessage(self, r._1, AcceptSync(nL, sfxp, lds(r))) -> net);
             }
@@ -268,7 +264,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       }
     }
         sc uponEvent {
-          case SC_Propose(scp) => { //todo: the problem here is that what it receives does not match with this (I don't understand why)
+          case SC_Propose(scp) => {
             log.info(s"The command {} was proposed!", c)
             log.info(s"The current state of the node is {}", state)
             if (state == (LEADER, PREPARE)) {
@@ -277,7 +273,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             else if (state == (LEADER, ACCEPT) && !stopped()) {
               va = va ++ List(scp);
               las(rself) = va.size;
-              for (r <- rothers.filter(x =>  lds.get(x) != 0)){
+              for (r <- rothers.filter(x =>  lds.get(x) != -1)){
                 trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
               }
             }
