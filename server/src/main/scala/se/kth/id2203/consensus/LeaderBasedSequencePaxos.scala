@@ -264,20 +264,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
         }
       }
-      case NetMessage(a, Decide(l, n)) => {
-        if (n == nProm) {
-          while (ld > l){
-            propCmds += va(ld).command.key //???????ß
-            for (p <- pi if lds.contains((p, c))) {
-              trigger(NetMessage(self, p, Decide(propCmds.size, n)) -> net);
-            }
-            ld += 1;
-          }
 
-        }
-      }
-
-
+        
         sc uponEvent {
           case SC_Propose(c) => {
             log.info(s"The command {} was proposed!", c)
