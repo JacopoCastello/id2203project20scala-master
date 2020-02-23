@@ -130,7 +130,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     def compareGreaterPromises(x:((Int, Long), List[RSM_Command]), y:((Int, Long), List[RSM_Command])): Boolean ={
       if(compareGreater(x._1,y._1)){ // suffix with max n
         true
-      }else if(x._1._1 == y._1._1 && x._1._2 == y._1._2 && x._2.size > y._2.size){ //longest suffix if equal
+      }else if(x == y && x._2.size > y._2.size){ //longest suffix if equal
         true
       }else{
         false
@@ -251,7 +251,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       } else if ((n == nL) && (state == (LEADER, ACCEPT))) {
         log.info(s"Late request for Promise from: ${a.src}")
-
         lds((a.src, ri(a.src))) = lda;
         var sfx = suffix(va, lds((a.src, ri(a.src))));
         trigger(NetMessage(self, a.src, AcceptSync(nL, sfx, lds((a.src, ri(a.src))))) -> net);
@@ -260,13 +259,25 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       }
     }
-      case NetMessage(p, Prepare(np, ldp, n)) => {
+    case NetMessage(a, Accepted(n, m)) => {
+      if ((n == nL) && (state == (LEADER, ACCEPT))) {
+        las((a.src, ri(a.src))) = m;
+        var x = pi.filter(x => las.getOrElse((x, c), 0) >= m);
+        if (m > lc && x.size >= (pi.size + 1) / 2) {
+          lc = m;
+          for (p <- others if lds((p, c)) != -1) {
+            trigger(NetMessage(self, p, Decide(lc, nL)) -> net);
+          }
+        }
+      }
+    }
+      case NetMessage(p, Prepare(np, ldp, nal)) => {
         if (compareGreater(nProm, np)) {
           nProm = np;
           state = (FOLLOWER, PREPARE);
           var sfx = List.empty[RSM_Command];
-          if (compareGreaterEqual(na, n)) {
-            sfx = suffix(va, ld);
+          if (compareGreaterEqual(na, nal)) {
+            sfx = suffix(va, ldp);
           }
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
         }
@@ -294,18 +305,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
         }
       }
-      case NetMessage(a, Accepted(n, m)) => {
-        if ((n == nL) && (state == (LEADER, ACCEPT))) {
-          las((a.src, ri(a.src))) = m;
-          var x = pi.filter(x => las.getOrElse((x, c), 0) >= m);
-          if (lc < m && x.size >= (pi.size + 1) / 2) {
-            lc = m;
-            for (p <- pi if lds.contains((p, c))) {
-              trigger(NetMessage(self, p, Decide(lc, nL)) -> net);
-            }
-          }
-        }
-      }
+
     }
 
 }
