@@ -229,21 +229,21 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
           if (va.last.command.opType == "STOP") {
              propCmds = List.empty; // commands will never be decided
-           } else if (comtypes.contains("STOP")) { // ordering SSi as the last one to add to va
-             var stop = propCmds.filter(x => x.command.opType == "STOP")
-             for (cmd <- propCmds.filter(x => x.command.opType != "STOP")) {
-               va = va ++ List(cmd)
-             }
-             va = va ++ stop
            } else {
-          for (cmd <- propCmds) {
-            va = va ++ List(cmd)
+            if (comtypes.contains("STOP")) { // ordering SSi as the last one to add to va
+              var stop = propCmds.filter(x => x.command.opType == "STOP")
+              for (cmd <- propCmds.filter(x => x.command.opType != "STOP")) {
+                va = va ++ List(cmd)
+              }
+              va = va ++ stop
+            } else {
+              for (cmd <- propCmds) {
+                va = va ++ List(cmd)
+              }
+            }
+            las((self, c)) = va.size;
+            state = (LEADER, ACCEPT);
           }
-          }
-          las((self, c)) = va.size;
-          //propCmds = List.empty;
-          state = (LEADER, ACCEPT);
-
           for (r <- rothers.filter(x => lds(x) != -1 && lds(x) != va.size)) {
             var sfxp = suffix(va, lds(r));
             trigger(NetMessage(self, r._1, AcceptSync(nL, sfxp, lds(r))) -> net);
