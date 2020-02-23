@@ -119,6 +119,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
        false
     }
   }
+
   def compareGreaterEqual(x: (Int, Long), y:(Int,Long)): Boolean ={
     if((x._1 >= y._1) || (x._1 == y._1 && x._2 >= y._2)){
       true
@@ -134,7 +135,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       }else{
         false
       }
-    }
     }
 
   // General code
@@ -218,28 +218,28 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         //val P: Set[NetAddress] = pi.filter(x =>  promises((a.src,ri(a.src))) != None);
         val P = pi.filter(x => promises.contains(x, c));
         if (P.size == math.ceil((pi.size + 1) / 2).toInt ) {
-          var ack = P.iterator.reduceLeft((v1, v2) => if (promises(v1, ri(v1))._1 > promises(v2, ri(v2))._1) v1 else v2);
+          var ack = P.iterator.reduceLeft((v1, v2) => if (compareGreaterPromises(promises(v1, ri(v1)), promises(v2, ri(v2)))) v1 else v2);
           var (k, sfx) = promises(ack, ri(ack));
-          //var (k, sfx) = promises(P.maxBy(item => promises(item,c)._2.size)); //what to compare in acks??
-          //val sfx = promises.values.maxBy(_._1)._2
-          //va = prefix(va, ld) ++ sfx ++ propCmds;
           va = prefix(va, ld) ++ sfx
 
-          /* if (va.last.command == "STOP") {
+          // for if below (I don't know how to filter this)
+          var comtypes = List.empty[String]
+          for (cmd <- propCmds ){
+            comtypes += cmd.command.opType
+          }
+          if (va.last.command.opType == "STOP") {
              propCmds = List.empty; // commands will never be decided
-           } else if (propCmds.contains(Op("STOP", "", "", ""))) { // ordering SSi as the last one to add to va
-             var stop = propCmds.filter(x => x.command == "STOP")
-             propCmds = propCmds.filter(x => x.command != "STOP")
-
-             for (c <- propCmds) {
-               va = va ++ List(c)
+           } else if (comtypes.contains("STOP")) { // ordering SSi as the last one to add to va
+             var stop = propCmds.filter(x => x.command.opType == "STOP")
+             for (cmd <- propCmds.filter(x => x.command.opType != "STOP")) {
+               va = va ++ List(cmd)
              }
              va = va ++ stop
-           } else {*/
-          for (c <- propCmds) {
-            va = va ++ List(c)
+           } else {
+          for (cmd <- propCmds) {
+            va = va ++ List(cmd)
           }
-          //}
+          }
           las((self, c)) = va.size;
           //propCmds = List.empty;
           state = (LEADER, ACCEPT);
