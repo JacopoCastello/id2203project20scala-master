@@ -137,7 +137,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     ble uponEvent {
       case BLE_Leader(l, b) => {
-        log.info(s"Proposing leader: $l [$self] (n: $n, nL: $nL)\n")
+        log.info(s"Proposing leader: $l [$self] \n")
+        println(nL)
         var n = (c,b)
         if (self.equals(l) && compareGreater(n,nL)){
           //leader = Some(l);
@@ -188,16 +189,16 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           //val P: Set[NetAddress] = pi.filter(x =>  promises((a.src,ri(a.src))) != None);
           val P = pi.filter(x => promises.contains(x, c));
           if (P.size == (pi.size + 1) / 2) {
-            //var ack = P.iterator.reduceLeft((v1, v2) => if (promises(ri(v1))._2.size > promises(ri(v2))._2.size) v1 else v2);
-            //var (k, sfx) = promises(ri(ack));
-            var (k, sfx) = promises(P.maxBy(item => promises(item, _)._2)); //what to compare in acks??
+            var ack = P.iterator.reduceLeft((v1, v2) => if (promises(v1,ri(v1))._2.size > promises(v2,ri(v2))._2.size) v1 else v2);
+            var (k, sfx) = promises(ack,ri(ack));
+            //var (k, sfx) = promises(P.maxBy(item => promises(item,c)._2.size)); //what to compare in acks??
             //val sfx = promises.values.maxBy(_._1)._2
             //va = prefix(va, ld) ++ sfx ++ propCmds;
             va = prefix(va, ld) ++ sfx
 
             if (va.last.command == "STOP") {
               propCmds = List.empty; //* commands will never be decided
-            } else if (propCmds.contains(Op("STOP", _, _, _))) { // ordering SSi as the last one to add to va
+            } else if (propCmds.contains(Op("STOP", "", "", ""))) { // ordering SSi as the last one to add to va
               var stop = propCmds.filter(x => x.command == "STOP")
               propCmds = propCmds.filter(x => x.command != "STOP")
 
@@ -265,7 +266,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       }
 
-        
+
         sc uponEvent {
           case SC_Propose(c) => {
             log.info(s"The command {} was proposed!", c)
