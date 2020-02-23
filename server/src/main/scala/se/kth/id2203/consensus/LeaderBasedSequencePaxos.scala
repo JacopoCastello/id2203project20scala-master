@@ -95,6 +95,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       s.take(l)
     }
 
+  def compareGreater(x: (Long,  List[RSM_Command]), y:(Long, List[RSM_Command])): Boolean ={
+    if((x._1 > y._1) || (x._1 == y._1 && x._2.size > y._2.size)){
+      true
+    }else{
+      false
+    }
+  }
+
     ble uponEvent {
       case BLE_Leader(l, n) => {
         log.info(s"Proposing leader: $l [$self] (n: $n, nL: $nL)\n")
@@ -129,7 +137,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           state = (FOLLOWER, PREPARE);
           var sfx = List.empty[RSM_Command];
           if (na >= n){
-            sfx = suffix(va,ld);
+            sfx = suffix(va,ldp);
           }
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
         }
@@ -142,7 +150,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           lds(a.src) = lda;
           val P: Set[NetAddress] = pi.filter(x => acks.get(x) != None);
           if (P.size == (pi.size+1)/2) {
-            var ack = P.iterator.reduceLeft((v1,v2) => if (acks(v1)._2.size > acks(v2)._2.size) v1 else v2);
+            var ack = P.iterator.reduceLeft((v1, v2) => if (compareGreater(acks(v1), acks(v2))) v1 else v2);
             var (k, sfx) = acks(ack);
             va = prefix(va, ld) ++ sfx ++ propCmds;
             las(self) = va.size;
