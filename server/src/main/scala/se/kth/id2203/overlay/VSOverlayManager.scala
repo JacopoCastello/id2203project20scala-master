@@ -23,12 +23,15 @@
  */
 package se.kth.id2203.overlay;
 
-import se.kth.id2203.bootstrapping._;
-import se.kth.id2203.networking._;
-import se.sics.kompics.sl._;
-import se.sics.kompics.network.Network;
-import se.sics.kompics.timer.Timer;
-import util.Random;
+import se.kth.id2203.bootstrapping._
+import se.kth.id2203.networking._
+import se.sics.kompics.sl._
+import se.sics.kompics.network.Network
+import se.sics.kompics.timer.Timer
+
+import util.Random
+import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Suspect}
+import se.kth.id2203.kvstore.Op
 
 /**
   * The V(ery)S(imple)OverlayManager.
@@ -47,6 +50,7 @@ class VSOverlayManager extends ComponentDefinition {
   val boot = requires(Bootstrapping);
   val net = requires[Network];
   val timer = requires[Timer];
+  val epfd = requires[EventuallyPerfectFailureDetector]
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private var lut: Option[LookupTable] = None; // --> go to LookupTable
@@ -95,5 +99,34 @@ class VSOverlayManager extends ComponentDefinition {
       log.info(s"Routing message for key $key to $target");
       trigger(NetMessage(self, target, msg) -> net);
     }
+  }
+
+
+  epfd uponEvent {
+    case Suspect(p: NetAddress) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      if (nodes.contains(p)) {
+        log.debug("Suspecting " + p + " triggering STOP proposal")
+        for (node <- group) {
+          trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
+        }
+      }
+    }
+
+    //Do we need a restore?
+
+    /* case Restore(p:NetAddress) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      if(nodes.contains(p)){
+        log.debug("Suspecting " + p + " triggering deletion proposal")
+        for (node <- group){
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
+        }
+      }
+    }*/
+
+
   }
 }

@@ -9,6 +9,8 @@ import se.sics.kompics.Start
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
 import se.sics.kompics.timer.Timer
+import se.kth.id2203.failuredetector.{EPFD, EventuallyPerfectFailureDetector}
+import scala.collection.mutable
 
 class KVParent extends ComponentDefinition {
 
@@ -23,12 +25,23 @@ class KVParent extends ComponentDefinition {
       //val topology = assignment.getNodes()
 
       val kv = create(classOf[KVService], Init.NONE)
-      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology))
+      // initial creation configuration 0
+      val c = 0;
+      val ri = mutable.Map.empty[NetAddress, Int];
+      for (node <- topology){
+        ri += (node -> c)
+      }
+      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c),ri ))
+      //val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology ))
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
+      val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology))
+
 
       trigger(new Start() -> kv.control())
       trigger(new Start() -> consensus.control())
       trigger(new Start() -> gossipLeaderElection.control())
+      trigger(new Start() -> eventuallyPerfectFailureDetector.control())
+
 
       // BallotLeaderElection (for paxos)
       connect[Timer](timer -> gossipLeaderElection)
@@ -38,9 +51,14 @@ class KVParent extends ComponentDefinition {
       connect[BallotLeaderElection](gossipLeaderElection -> consensus)
       connect[Network](net -> consensus)
 
-      // KV (the actual thing)
+      // KV
       connect[Network](net -> kv)
       connect[SequenceConsensus](consensus -> kv)
+
+      //EPFD
+      connect[Network](net -> eventuallyPerfectFailureDetector)
+      connect[Timer](timer -> eventuallyPerfectFailureDetector)
+
     }
   }
 }

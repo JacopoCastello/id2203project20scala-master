@@ -34,10 +34,13 @@ import scala.collection.mutable;
 trait ProposedOpTrait extends RSM_Command {
   def source: NetAddress
   def command: Operation
+  /*def confReplicagroup: Set[NetAddress]
+  def confNumber: Int
+  def confRID: mutable.Map[NetAddress, Int]*/
 }
 
+//case class OperationToPropose(source: NetAddress, command: Operation, confReplicagroup: Set[NetAddress], confNumber: Int, confRID: mutable.Map[NetAddress, Int]) extends ProposedOpTrait
 case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait
-
 class KVService extends ComponentDefinition {
 
   //******* Ports ******
@@ -51,8 +54,8 @@ class KVService extends ComponentDefinition {
   //******* Handlers ******
   net uponEvent {
     case NetMessage(header, op: Op) => {
-        log.info("Got operation {}!", op);
-      }
+      log.info("Got operation {}!", op);
+    }
   }
 
   //******* Handlers ******
@@ -62,12 +65,25 @@ class KVService extends ComponentDefinition {
         case "GET" => log.info("Received operation GET from: " + src);
         case "PUT" => log.info("Received operation PUT from: " + src);
         case "CAS" => log.info("Received operation CAS from: " + src);
+        case "STOP" => log.info("Received operation STOP from: " + src);
       }
     }
+
       val opPropose = OperationToPropose(src.src, op)
       trigger(SC_Propose(opPropose) -> consensus)
       log.info("Triggering the operation: " + src);
-    }
+  }
+  /*
+    if (op.opType.equals("STOP")) {
+          val opPropose = OperationToPropose(src.src, op, _,_,_)
+          trigger(SC_Propose(opPropose) -> consensus)
+          log.info("Triggering the STOP operation for config : " + src);
+        } else {
+          val opPropose = OperationToPropose(src.src, op, _, _, _)
+          trigger(SC_Propose(opPropose) -> consensus)
+          log.info("Triggering the operation: " + src);
+        }
+    }*/
 
 
 
@@ -109,4 +125,3 @@ class KVService extends ComponentDefinition {
     }
   }
 }
-// todo: implement PUT, GET, CAS here
