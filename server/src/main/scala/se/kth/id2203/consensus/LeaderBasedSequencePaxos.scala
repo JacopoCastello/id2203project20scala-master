@@ -64,14 +64,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     val ble = requires[BallotLeaderElection];
     val net = requires[Network]
 
-  // initialize
+  // initialize:  self, topology, c, (self, c),ri
   val (self, pi, c, rself, ri, rothers, others) = init match {
     case Init(
     addr: NetAddress,
-    c: Int,                                              // configuration c
     pi: Set[NetAddress] @unchecked,                     // set of processes in config c
-    ri:mutable.Map[NetAddress, Int],                   // set of replicas in config c (ip:port, Repnumber
-    rself: (NetAddress, Int))                          // Repnumber of this one
+    c: Int,                                              // configuration c
+    rself: (NetAddress, Int),                        // Repnumber of this one
+    ri:mutable.Map[NetAddress, Int])                   // set of replicas in config c (ip:port, Repnumber
     => (addr, pi, c, rself, ri, ri-addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
   }
 
@@ -226,7 +226,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             // for if below (I don't know how to filter this)
             var comtypes = List.empty[String]
             for (cmd <- propCmds) {
-              comtypes += cmd.command.opType
+              comtypes = comtypes ++ List(cmd.command.opType)
             }
             if (va.last.command.opType == "STOP") {
               propCmds = List.empty; // commands will never be decided
