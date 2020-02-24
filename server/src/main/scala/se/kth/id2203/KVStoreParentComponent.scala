@@ -19,13 +19,17 @@ class KVParent extends ComponentDefinition {
   val net: PositivePort[Network] = requires[Network]
   val timer: PositivePort[Timer] = requires[Timer]
 
+  val self = cfg.getValue[NetAddress]("id2203.project.address")
+
+  var kv = create(classOf[KVService], Init.NONE)
+
   boot uponEvent {
     case Booted(assignment: LookupTable) => {
-      val self = cfg.getValue[NetAddress]("id2203.project.address")
+
       val topology: Set[NetAddress] = assignment.getNodesforGroup(self)
       //val topology = assignment.getNodes()
 
-      val kv = create(classOf[KVService], Init.NONE)
+      kv = create(classOf[KVService], Init.NONE)
       // initial creation configuration 0. At the new configuration, the KVStoreParent should be passed the id
       val c = 0;
       val ri = mutable.Map.empty[NetAddress, Int];
