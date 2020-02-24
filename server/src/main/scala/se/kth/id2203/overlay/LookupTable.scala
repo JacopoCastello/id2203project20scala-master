@@ -1,3 +1,29 @@
+Skip to content
+
+Search or jump to…
+
+Pull requests
+  Issues
+Marketplace
+Explore
+
+@RSvenja
+Learn Git and GitHub without any code!
+  Using the Hello World guide, you’ll start a branch, write comments, and open a pull request.
+
+
+  RSvenja
+/
+id2203project20scala-master
+Private
+1
+0 0
+Code  Issues 17  Pull requests 0  Actions  Projects 0  Security  Insights  Settings
+  id2203project20scala-master/server/src/main/scala/se/kth/id2203/overlay/LookupTable.scala
+@RSvenja RSvenja added functionality to lut
+  22c72b6 5 days ago
+135 lines (115 sloc)  4.76 KB
+
 /*
  * The MIT License
  *
@@ -37,7 +63,6 @@ Current implementation:
 nodes get assigned depending on how many are available
 key get assigned to partition by modulo numberOfPartitions
 lookup those values via funtion
-
 Questions:
 How to update lookup for existing nodes once it grows (assignments might be shifted)?
 Also keys might hash to other partitions if more are availble -- might be too much effort to shift all of them
@@ -50,14 +75,14 @@ class LookupTable extends NodeAssignment with Serializable {
   val partitions = TreeSetMultiMap.empty[Int, NetAddress]; //A Multimap is a general way to associate keys with arbitrarily many values.
 
   // initial lookup
- /* def lookup(key: String): Iterable[NetAddress] = {
-    val keyHash = key.hashCode(); // not collision free
-    val partition = partitions.floor(keyHash) match {
-      case Some(k) => k
-      case None    => partitions.lastKey
-    }
-    return partitions(partition);
-  }*/
+  /* def lookup(key: String): Iterable[NetAddress] = {
+     val keyHash = key.hashCode(); // not collision free
+     val partition = partitions.floor(keyHash) match {
+       case Some(k) => k
+       case None    => partitions.lastKey
+     }
+     return partitions(partition);
+   }*/
 
   // our lookup
   def lookup(key: String): Iterable[NetAddress] = {
@@ -75,9 +100,22 @@ class LookupTable extends NodeAssignment with Serializable {
     case (acc, kv) => acc ++ kv._2
   }
 
+  def getKeyforNode(node: NetAddress): Int = {
+    val entry =  partitions.filter(partition =>  partition._2.iterator.contains(node)).toList
+    if (entry.size>0) {
+      return entry(0)._1
+    }else{ //return -1 if node is not in lut
+      return -1
+    }
+  }
+
   def getNodes(): Set[NetAddress] = partitions.foldLeft(Set.empty[NetAddress]) {
     case (acc, kv) => acc ++ kv._2
   }
+
+
+
+
 
   override def toString(): String = {
     val sb = new StringBuilder();
@@ -86,7 +124,6 @@ class LookupTable extends NodeAssignment with Serializable {
     sb.append(")");
     return sb.toString();
   }
-
 }
 
 object LookupTable {
@@ -112,7 +149,12 @@ object LookupTable {
       }
     }
     lut
+  }
 
+  // add a node to a partition
+  def addNodetoGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
+    lut.partitions.put(partitionIdx -> node);
+    lut
   }
 }
-// todo: come up with a hash function and way to partition it: e.g. depending on the number of nodes available
+

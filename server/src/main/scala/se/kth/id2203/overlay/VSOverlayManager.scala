@@ -30,7 +30,7 @@ import se.sics.kompics.network.Network
 import se.sics.kompics.timer.Timer
 
 import util.Random
-import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Suspect}
+import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
 import se.kth.id2203.kvstore.Op
 
 /**
@@ -54,6 +54,7 @@ class VSOverlayManager extends ComponentDefinition {
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private var lut: Option[LookupTable] = None; // --> go to LookupTable
+  private var suspected_nodes : Set[NetAddress] = Set();
   //******* Handlers ******
   boot uponEvent {
     case GetInitialAssignments(nodes) => {
@@ -73,9 +74,10 @@ class VSOverlayManager extends ComponentDefinition {
       val nodes = lut.get.lookup(key);
       assert(!nodes.isEmpty, "nodes partition is empty");
       nodes.foreach(node => {
-        trigger(NetMessage(header.src, node, msg) -> net);
-        log.info(s"Forwarding message for key $key to $node");
-
+      //  if(!suspected_nodes.contains(node)) { // only sent to alive nodes
+          trigger(NetMessage(header.src, node, msg) -> net);
+          log.info(s"Forwarding message for key $key to $node");
+      //  }
       })
     }
     case NetMessage(header, msg: Connect) => {
@@ -107,25 +109,23 @@ class VSOverlayManager extends ComponentDefinition {
       val nodes = lut.get.getNodes();
       val group = lut.get.getNodesforGroup(p)
       if (nodes.contains(p)) {
+        suspected_nodes += p
         log.debug("Suspecting " + p + " triggering STOP proposal")
         for (node <- group) {
           trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
         }
       }
     }
-
-    //Do we need a restore?
-
-    /* case Restore(p:NetAddress) => {
-      val nodes = lut.get.getNodes();
+     case Restore(p:NetAddress) => {
       val group = lut.get.getNodesforGroup(p)
-      if(nodes.contains(p)){
-        log.debug("Suspecting " + p + " triggering deletion proposal")
-        for (node <- group){
+      if(suspected_nodes.contains(p)){
+        log.debug("Restore " + p )
+        suspected_nodes -= p
+        /*for (node <- group){
           trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
-        }
+        }*/
       }
-    }*/
+    }
 
 
   }
