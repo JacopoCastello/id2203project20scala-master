@@ -2,6 +2,7 @@ package se.kth.id2203
 
 import se.kth.id2203.bootstrapping.{Booted, Bootstrapping}
 import se.kth.id2203.consensus.{BallotLeaderElection, GossipLeaderElection, LeaderBasedSequencePaxos, SequenceConsensus}
+import se.kth.id2203.failuredetector.EPFD
 import se.kth.id2203.kvstore.KVService
 import se.kth.id2203.networking.NetAddress
 import se.kth.id2203.overlay.LookupTable
@@ -9,7 +10,7 @@ import se.sics.kompics.Start
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
 import se.sics.kompics.timer.Timer
-import se.kth.id2203.failuredetector.{EPFD, EventuallyPerfectFailureDetector}
+
 import scala.collection.mutable
 
 class KVParent extends ComponentDefinition {
@@ -25,7 +26,7 @@ class KVParent extends ComponentDefinition {
       //val topology = assignment.getNodes()
 
       val kv = create(classOf[KVService], Init.NONE)
-      // initial creation configuration 0
+      // initial creation configuration 0. At the new configuration, the KVStoreParent should be passed the id
       val c = 0;
       val ri = mutable.Map.empty[NetAddress, Int];
       for (node <- topology){

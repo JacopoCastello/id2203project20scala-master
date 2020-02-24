@@ -113,7 +113,7 @@ class GossipLeaderElection(init: Init[GossipLeaderElection]) extends ComponentDe
 
   timer uponEvent {
     case CheckTimeout(_) => {
-      if (ballots.size + 1 >= (topology.size / 2)) {
+      if (ballots.size + 1 >= (topology.size + 1 / 2)) {
         checkLeader();
       }
         ballots.clear();

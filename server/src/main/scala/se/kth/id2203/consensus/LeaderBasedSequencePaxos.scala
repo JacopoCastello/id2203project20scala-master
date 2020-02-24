@@ -24,12 +24,11 @@
 package se.kth.id2203.consensus
 
 import se.kth.id2203.networking.{NetAddress, NetMessage}
-import se.sics.kompics.sl._
+import se.sics.kompics.KompicsEvent
 import se.sics.kompics.network._
-import se.sics.kompics.{KompicsEvent, Start}
+import se.sics.kompics.sl._
 
 import scala.collection.mutable
-import se.kth.id2203.kvstore.{Op, OperationToPropose}
 
   case class Prepare(nL: (Int,Long), ld: Int, na: (Int,Long)) extends KompicsEvent;
 
@@ -72,7 +71,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     c: Int,                                              // configuration c
     rself: (NetAddress, Int),                        // Repnumber of this one
     ri:mutable.Map[NetAddress, Int])                   // set of replicas in config c (ip:port, Repnumber
-    => (addr, pi, c, rself, ri, ri-addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
+    => (addr, pi, c, rself, ri, ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
   }
 
 
@@ -129,7 +128,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   }
 
     def compareGreaterPromises(x: ((Int, Long), List[RSM_Command]), y: ((Int, Long), List[RSM_Command])): Boolean = {
-      if (compareGreater(x._1, y._1) || (x == y && x._2.size > y._2.size)) { // suffix with max n
+      if (compareGreater(x._1, y._1) || (x._1._1 == y._1._1 && x._1._2 == y._1._2 && x._2.size > y._2.size)) { // suffix with max n
         true
       } else {
         false
@@ -138,10 +137,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     // General code
     def stopped(): Boolean = {
-      if (va(ld).command.key == "STOP") {
-        log.info(s"PAXOS finds STOP in final sequence: \n")
+      if (!va.isEmpty) {
+        if(va(ld).command.key == "STOP") {
+          log.info(s"PAXOS finds STOP in final sequence: \n")
+          true
+        }
+          false
       }
-      va(ld).command.key.equals("STOP")
+      false
     }
 
     ble uponEvent {
@@ -170,6 +173,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         } else {
           state = (FOLLOWER, state._2);
         }
+
       }
     }
     // not implemented
@@ -209,6 +213,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     net uponEvent {
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
+        log.info(s"Value of p: ${a.src}")
+        log.info(s"Value of np: ${n}")
         if ((n == nL) && (state == (LEADER, PREPARE))) {
           log.info(s"Promise issued with leader: ${a.src}")
           promises((a.src, ri(a.src))) = (na, sfxa);
@@ -218,7 +224,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           val P = pi.filter(x => promises.contains(x, c));
           if (P.size == math.ceil((pi.size + 1) / 2).toInt) {
             var ack = P.iterator.reduceLeft((v1, v2) => if (compareGreaterPromises(promises(v1, ri(v1)), promises(v2, ri(v2)))) v1 else v2);
-            var (k, sfx) = promises(ack, ri(ack));
+            var (k, sfx) = promises((ack,c));
             va = prefix(va, ld) ++ sfx
 
             // for if below (I don't know how to filter this)
@@ -226,7 +232,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             for (cmd <- propCmds) {
               comtypes = comtypes ++ List(cmd.command.opType)
             }
-            if (va.last.command.opType == "STOP") {
+            if (!va.isEmpty && va.last.command.opType == "STOP") {
               propCmds = List.empty; // commands will never be decided
             } else {
               if (comtypes.contains("STOP")) { // ordering SSi as the last one to add to va
@@ -261,7 +267,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(a, Accepted(n, m)) => {
         if ((n == nL) && (state == (LEADER, ACCEPT))) {
           las((a.src, ri(a.src))) = m;
-          var x = pi.filter(x => las.getOrElse((x, c), 0) >= m);
+          var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
             lc = m;
             for (p <- others if lds((p, c)) != -1) {
@@ -271,7 +277,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       }
       case NetMessage(p, Prepare(np, ldp, nal)) => {
-        if (compareGreater(nProm, np)) {
+        log.info(s"Value of p: ${p.src}")
+        log.info(s"Value of np: ${np}")
+       // if (compareGreater(nProm, np)) {
+        if (compareGreater(np, nProm)) {
           nProm = np;
           state = (FOLLOWER, PREPARE);
           var sfx = List.empty[RSM_Command];
@@ -281,22 +290,22 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
         }
       }
-      case NetMessage(p, AcceptSync(nL, sfx, ldp)) => {
-        if ((nProm == nL) && (state == (FOLLOWER, PREPARE))) {
-          na = nL;
+      case NetMessage(p, AcceptSync(localnL, sfx, ldp)) => {
+        if ((nProm == localnL) && (state == (FOLLOWER, PREPARE))) {
+          na = localnL;
           va = prefix(va, ldp) ++ sfx;
           state = (FOLLOWER, ACCEPT);
-          trigger(NetMessage(self, p.src, Accepted(nL, va.size)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
         }
       }
-      case NetMessage(p, Accept(nL, cmd)) => {
-        if ((nProm == nL) && (state == (FOLLOWER, ACCEPT))) {
+      case NetMessage(p, Accept(localnL, cmd)) => {
+        if ((nProm == localnL) && (state == (FOLLOWER, ACCEPT))) {
           va = va ++ List(cmd);
-          trigger(NetMessage(self, p.src, Accepted(nL, va.size)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
         }
       }
-      case NetMessage(_, Decide(l, nL)) => {
-        if (nProm == nL) {
+      case NetMessage(_, Decide(l, localnL)) => {
+        if (nProm == localnL) {
           while (ld < l) {
             trigger(SC_Decide(va(ld)) -> sc);
             ld = ld + 1;
