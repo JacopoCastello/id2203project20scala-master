@@ -1,6 +1,6 @@
 package se.kth.id2203
 
-import se.kth.id2203.bootstrapping.{Booted, Bootstrapping}
+import se.kth.id2203.bootstrapping.{BootNewReplica, Booted, Bootstrapping}
 import se.kth.id2203.consensus.{BallotLeaderElection, GossipLeaderElection, LeaderBasedSequencePaxos, SequenceConsensus}
 import se.kth.id2203.failuredetector.EPFD
 import se.kth.id2203.kvstore.KVService
@@ -20,8 +20,8 @@ class KVParent extends ComponentDefinition {
   val timer: PositivePort[Timer] = requires[Timer]
 
   val self = cfg.getValue[NetAddress]("id2203.project.address")
-
-  var kv = create(classOf[KVService], Init.NONE)
+  var  c = 0;
+  // kv = create(classOf[KVService], Init.NONE)
 
   boot uponEvent {
     case Booted(assignment: LookupTable) => {
@@ -29,9 +29,9 @@ class KVParent extends ComponentDefinition {
       val topology: Set[NetAddress] = assignment.getNodesforGroup(self)
       //val topology = assignment.getNodes()
 
-      kv = create(classOf[KVService], Init.NONE)
+      val kv = create(classOf[KVService], Init.NONE)
       // initial creation configuration 0. At the new configuration, the KVStoreParent should be passed the id
-      val c = 0;
+      c = 0;
       val ri = mutable.Map.empty[NetAddress, Int];
       for (node <- topology){
         ri += (node -> c)
@@ -65,5 +65,9 @@ class KVParent extends ComponentDefinition {
       connect[Timer](timer -> eventuallyPerfectFailureDetector)
 
     }
+    case BootNewReplica(sender: NetAddress, nodes: Set[NetAddress]) =>{
+      print("boot new replicas in config: $c ")
+    }
   }
+
 }

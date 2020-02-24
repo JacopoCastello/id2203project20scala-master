@@ -16,6 +16,7 @@ class LookUpTest extends FlatSpec {
   var adr5 = NetAddressConverter.convert("127.0.0.1:56757");
   var adr6 = NetAddressConverter.convert("127.0.0.1:56775");
   var adr7 = NetAddressConverter.convert("127.0.0.1:56555");
+  var adr8 = NetAddressConverter.convert("127.0.0.1:56550");
 
   var nodeset = Set(adr1, adr2, adr3, adr4, adr5, adr6, adr7);
 
@@ -41,6 +42,18 @@ class LookUpTest extends FlatSpec {
     var partitionForNode = lut.getNodesforGroup(adr1);
     //print("Node1 is in partition: " + partitionForNode + " \n")
     assert(!partitionForNode.isEmpty)
+  }
+
+  it should "add a node to a group" in {
+    lut.addNodetoGroup(adr8,0)
+    //println(lut)
+    assert(lut.partitions.get(0).get.contains(adr8))
+  }
+
+  it should "remove a node from a group" in {
+    lut.removeNodefromGroup(adr8,0)
+    //println(lut)
+    assert(!lut.partitions.get(0).get.contains(adr8))
   }
 
 }

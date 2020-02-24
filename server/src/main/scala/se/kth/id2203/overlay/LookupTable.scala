@@ -78,17 +78,19 @@ class LookupTable extends NodeAssignment with Serializable {
 
 
   // add a node to a partition
-  def addNodetoGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
-    lut.partitions.put(partitionIdx -> node);
-    lut
+  def addNodetoGroup(node: NetAddress, partitionIdx: Int): Boolean ={
+    partitions.put(partitionIdx -> node);
+    true //how to return false?
   }
 
   // remove a node from a partition
-  def removeNodefromGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
-    if(lut.partitions.get(partitionIdx).contains(node)){
-      lut.partitions.remove(partitionIdx -> node);
+  def removeNodefromGroup(node: NetAddress, partitionIdx: Int): Boolean ={
+    if(partitions.get(partitionIdx).get.contains(node)){
+      partitions.remove(partitionIdx -> node);
+      true
+    }else{
+      false
     }
-    lut
   }
 
   override def toString(): String = {

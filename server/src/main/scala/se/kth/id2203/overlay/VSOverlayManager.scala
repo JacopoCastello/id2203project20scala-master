@@ -59,7 +59,7 @@ class VSOverlayManager extends ComponentDefinition {
   boot uponEvent {
     case GetInitialAssignments(nodes) => {
       log.info("Generating LookupTable...");
-      val lut = LookupTable.generate(nodes, 3);
+      var lut = LookupTable.generate(nodes, 3);
       logger.debug("Generated assignments:\n$lut");
       trigger(new InitialAssignments(lut) -> boot);
     }
@@ -108,9 +108,13 @@ class VSOverlayManager extends ComponentDefinition {
     case Suspect(p: NetAddress) => {
       val nodes = lut.get.getNodes();
       val group = lut.get.getNodesforGroup(p)
-      if (nodes.contains(p)) {
+      val groupidx = lut.get.getKeyforNode(p)
+      if (nodes.contains(p) && !suspected_nodes.contains(p)) {
+        log.debug("Suspecting " + p + " creating new replicas")
+        trigger(BootNewReplica(self, group-p) -> boot); //how do we avoid to start many?
+        log.debug("Suspecting " + p + " triggering STOP proposal and remove from lut")
+        lut.get.removeNodefromGroup(p, groupidx)
         suspected_nodes += p
-        log.debug("Suspecting " + p + " triggering STOP proposal")
         for (node <- group) {
           trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
         }

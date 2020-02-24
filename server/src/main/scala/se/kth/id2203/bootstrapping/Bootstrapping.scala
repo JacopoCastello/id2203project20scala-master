@@ -8,8 +8,12 @@ object Bootstrapping extends Port {
   indication[GetInitialAssignments];
   indication[Booted];
   request[InitialAssignments];
+  // Reconfiguration
+  indication[BootNewReplica];
 }
 
 case class GetInitialAssignments(nodes: Set[NetAddress]) extends KompicsEvent;
 case class Booted(assignment: NodeAssignment) extends KompicsEvent;
 case class InitialAssignments(assignment: NodeAssignment) extends KompicsEvent;
+// Reconfiguration
+case class BootNewReplica(sender:NetAddress, nodes: Set[NetAddress]) extends KompicsEvent;
