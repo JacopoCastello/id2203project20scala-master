@@ -121,10 +121,12 @@ class VSOverlayManager extends ComponentDefinition {
       }
     }
      case Restore(p:NetAddress) => {
-      val group = lut.get.getNodesforGroup(p)
+       val groupidx = lut.get.getKeyforNode(p)
       if(suspected_nodes.contains(p)){
-        log.debug("Restore " + p )
+        log.debug("Restore " + p + "add back to lut")
         suspected_nodes -= p
+        // todo: should we put it back?
+        lut.get.addNodetoGroup(p,groupidx)
         /*for (node <- group){
           trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
         }*/

@@ -66,7 +66,8 @@ class KVParent extends ComponentDefinition {
 
     }
     case BootNewReplica(sender: NetAddress, nodes: Set[NetAddress]) =>{
-      print("boot new replicas in config: $c ")
+      print("boot new replicas")
+      //todo: how to make sure we don't start duplicate ones (from every node that suspected the failure) and were to increase c?
     }
   }
 
