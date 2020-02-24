@@ -65,7 +65,7 @@ key get assigned to partition by modulo numberOfPartitions
 lookup those values via funtion
 Questions:
 How to update lookup for existing nodes once it grows (assignments might be shifted)?
-Also keys might hash to other partitions if more are availble -- might be too much effort to shift all of them
+Also keys might hash to other partitions if more are available -- might be too much effort to shift all of them
 --> Let's just assume a fixed number first and deal with this later
  */
 
@@ -74,24 +74,12 @@ class LookupTable extends NodeAssignment with Serializable {
   val nodesInPartition = 3;
   val partitions = TreeSetMultiMap.empty[Int, NetAddress]; //A Multimap is a general way to associate keys with arbitrarily many values.
 
-  // initial lookup
-  /* def lookup(key: String): Iterable[NetAddress] = {
-     val keyHash = key.hashCode(); // not collision free
-     val partition = partitions.floor(keyHash) match {
-       case Some(k) => k
-       case None    => partitions.lastKey
-     }
-     return partitions(partition);
-   }*/
 
   // our lookup
   def lookup(key: String): Iterable[NetAddress] = {
     val keyHash = math.abs(key.hashCode()); // not collision free
     val partitionIdx = keyHash % partitions.keySet.size // 0 or 1 or 2 if we have 3 partition --> always in N
-    /*val partition = partitionIdx match {
-      case idx => idx
-      case _    => partitions.lastKey
-    }*/
+
     return partitions(partitionIdx);
   }
 
@@ -114,8 +102,19 @@ class LookupTable extends NodeAssignment with Serializable {
   }
 
 
+  // add a node to a partition
+  def addNodetoGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
+    lut.partitions.put(partitionIdx -> node);
+    lut
+  }
 
-
+  // remove a node from a partition
+  def removeNodefromGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
+    if(lut.partitions.get(partitionIdx).contains(node)){
+      lut.partitions.remove(partitionIdx -> node);
+    }
+    lut
+  }
 
   override def toString(): String = {
     val sb = new StringBuilder();
@@ -151,10 +150,5 @@ object LookupTable {
     lut
   }
 
-  // add a node to a partition
-  def addNodetoGroup(node: NetAddress, partitionIdx: Int, lut: LookupTable ): LookupTable ={
-    lut.partitions.put(partitionIdx -> node);
-    lut
-  }
 }
 
