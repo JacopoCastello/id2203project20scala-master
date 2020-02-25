@@ -83,6 +83,7 @@ class KVService extends ComponentDefinition {
         case "PUT" =>
           log.info(s"Handling operation {}!", command)
           storage += (command.key -> command.value)
+          log.info(s"Storage at :"+ self+" is: "+storage)
           trigger(NetMessage(self, source, command.response(OpCode.Ok, command.value)) -> net)
         case "CAS" =>
           log.info(s"Handling operation {}!", command)
@@ -91,6 +92,7 @@ class KVService extends ComponentDefinition {
               // Only perform the operation if it is the same
               if (command.expected != "" && command.expected == value) {
                 storage(command.key) = command.value
+                log.info(s"Storage at :"+ self+" is: "+storage)
               }
 
               value
