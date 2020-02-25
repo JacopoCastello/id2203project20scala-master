@@ -87,7 +87,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   val lds = mutable.Map.empty[(NetAddress, Int), Int];                                    // length of longest known decided sequence per acceptor
   for (r <- ri){
     las += (r -> sigma.size)
-    lds += (r -> 0);
+    lds += (r -> -1);
   }
   var propCmds = List.empty[RSM_Command];                                                 //set of commands that need to be appended to the log
   var lc = sigma.size;                                                                    //length of longest chosen sequence
@@ -157,7 +157,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
           for (r <- ri) {
             las += (r -> sigma.size);
-            lds += (r -> 0);
+            lds += (r -> -1);
           }
           lds(rself) = ld;
           lc = sigma.size;
@@ -189,7 +189,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         else if (state == (LEADER, ACCEPT) && !stopped()) {
           va = va ++ List(scp);
           las(rself) = va.size;
-          for (r <- rothers.filter(x => lds.get(x) != 0)) {
+          for (r <- rothers.filter(x => lds.get(x) != -1)) {
             trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
           }
         }
@@ -219,7 +219,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           lds((a.src, ri(a.src))) = lda;
 
           //val P: Set[NetAddress] = pi.filter(x =>  promises((a.src,ri(a.src))) != None);
-          val P = pi.filter(x => promises.contains(x, c));
+          val P = pi.filter(x => promises.contains(x, ri(a.src)));
           if (P.size == math.ceil((pi.size + 1) / 2).toInt) {
             var ack = P.iterator.reduceLeft((v1, v2) => if (compareGreaterPromises(promises(v1, ri(v1)), promises(v2, ri(v2)))) v1 else v2);
             var (k, sfx) = promises((ack,c));
@@ -247,8 +247,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
               las((self, c)) = va.size;
               state = (LEADER, ACCEPT);
             }
-            for (r <- rothers.filter(x => lds(x) != -1 && lds(x) != va.size)) {
-              var sfxp = suffix(va, lds(r));
+            for (r <- rothers.filter(x => lds(x) != -1 )) {//&& lds(x) != va.size
+              var sfxp = suffix(va, lds(r))
               trigger(NetMessage(self, r._1, AcceptSync(nL, sfxp, lds(r))) -> net);
             }
           }
@@ -265,7 +265,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(a, Accepted(n, m)) => {
         if ((n == nL) && (state == (LEADER, ACCEPT))) {
           las((a.src, ri(a.src))) = m;
-          // todo: this gives an error: get java.lang.IndexOutOfBoundsException: 0
           var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
             lc = m;
