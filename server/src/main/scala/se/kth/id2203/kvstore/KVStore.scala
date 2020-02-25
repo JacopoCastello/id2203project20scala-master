@@ -73,18 +73,6 @@ class KVService extends ComponentDefinition {
       trigger(SC_Propose(opPropose) -> consensus)
       log.info("Triggering the operation: " + src);
   }
-  /*
-    if (op.opType.equals("STOP")) {
-          val opPropose = OperationToPropose(src.src, op, _,_,_)
-          trigger(SC_Propose(opPropose) -> consensus)
-          log.info("Triggering the STOP operation for config : " + src);
-        } else {
-          val opPropose = OperationToPropose(src.src, op, _, _, _)
-          trigger(SC_Propose(opPropose) -> consensus)
-          log.info("Triggering the operation: " + src);
-        }
-    }*/
-
 
 
   // The decided upon messages
