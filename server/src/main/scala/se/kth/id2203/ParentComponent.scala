@@ -58,6 +58,7 @@ class ParentComponent extends ComponentDefinition {
 
     // KVParent
     connect(Bootstrapping)(boot -> kvParent)
+    //connect(ReplicaMsg)(overlay -> kvParent)
     connect[Timer](timer -> kvParent)
     connect[Network](net -> kvParent)
   }

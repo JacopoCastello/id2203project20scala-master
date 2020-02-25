@@ -5,7 +5,7 @@ import se.kth.id2203.consensus.{BallotLeaderElection, GossipLeaderElection, Lead
 import se.kth.id2203.failuredetector.EPFD
 import se.kth.id2203.kvstore.{KVService, Op}
 import se.kth.id2203.networking.{NetAddress, NetMessage}
-import se.kth.id2203.overlay.{BootNewReplica, LookupTable}
+import se.kth.id2203.overlay.{BootNewReplica, LookupTable, ReplicaMsg}
 import se.sics.kompics.Start
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, KompicsEvent, PositivePort}
@@ -17,6 +17,7 @@ class KVParent extends ComponentDefinition {
 
   val boot: PositivePort[Bootstrapping.type] = requires(Bootstrapping)
   val net: PositivePort[Network] = requires[Network]
+  val replica: PositivePort[ReplicaMsg] = requires[ReplicaMsg]
   val timer: PositivePort[Timer] = requires[Timer]
 
  // case class BootNewReplica(sender:NetAddress, nodes: Set[NetAddress]) extends KompicsEvent;
@@ -70,6 +71,9 @@ class KVParent extends ComponentDefinition {
   }
   net uponEvent {
     case  NetMessage(header, BootNewReplica(sender: NetAddress, group: Set[NetAddress])) =>{
+      //todo: find out how to send it via replica
+ /* replica uponEvent {
+        case  BootNewReplica(sender: NetAddress, group: Set[NetAddress]) =>{*/
       print("Boot new replica for node"+ self + " in configuration "+c+" in group "+ group)
       c +=1 // move to next config
       val ri = mutable.Map.empty[NetAddress, Int];
