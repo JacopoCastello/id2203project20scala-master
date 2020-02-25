@@ -165,8 +165,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           for (r <- rothers) {
             trigger(NetMessage(self, r._1, Prepare(nL, ld, na)) -> net);
           }
-        } else if (state == (state._1, RECOVER)) {
           // not implemented
+      //  } else if (state == (state._1, RECOVER)) {
           // send (PrepareReq) to l
         } else {
           state = (FOLLOWER, state._2);
@@ -174,7 +174,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
       }
     }
-    // not implemented
+    // not implemented:
     // upon connectionlost
     // upon preparereq
 
@@ -218,14 +218,12 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           promises((a.src, ri(a.src))) = (na, sfxa);
           lds((a.src, ri(a.src))) = lda;
 
-          //val P: Set[NetAddress] = pi.filter(x =>  promises((a.src,ri(a.src))) != None);
           val P = pi.filter(x => promises.contains(x, ri(a.src)));
           if (P.size == math.ceil((pi.size + 1) / 2).toInt) {
             var ack = P.iterator.reduceLeft((v1, v2) => if (compareGreaterPromises(promises(v1, ri(v1)), promises(v2, ri(v2)))) v1 else v2);
             var (k, sfx) = promises((ack,c));
             va = prefix(va, ld) ++ sfx
 
-            // for if below (I don't know how to filter this)
             var comtypes = List.empty[String]
             for (cmd <- propCmds) {
               comtypes = comtypes ++ List(cmd.command.opType)
