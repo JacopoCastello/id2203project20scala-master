@@ -3,8 +3,8 @@ package se.kth.id2203
 import se.kth.id2203.bootstrapping.{BootNewReplica, Booted, Bootstrapping}
 import se.kth.id2203.consensus.{BallotLeaderElection, GossipLeaderElection, LeaderBasedSequencePaxos, SequenceConsensus}
 import se.kth.id2203.failuredetector.EPFD
-import se.kth.id2203.kvstore.KVService
-import se.kth.id2203.networking.NetAddress
+import se.kth.id2203.kvstore.{KVService, Op}
+import se.kth.id2203.networking.{NetAddress, NetMessage}
 import se.kth.id2203.overlay.LookupTable
 import se.sics.kompics.Start
 import se.sics.kompics.network.Network
@@ -65,9 +65,47 @@ class KVParent extends ComponentDefinition {
       connect[Timer](timer -> eventuallyPerfectFailureDetector)
 
     }
-    case BootNewReplica(sender: NetAddress, nodes: Set[NetAddress]) =>{
-      print("boot new replicas")
-      //todo: how to make sure we don't start duplicate ones (from every node that suspected the failure) and were to increase c?
+    case BootNewReplica(sender: NetAddress, group: Set[NetAddress]) =>{
+      print("Boot new replica for node"+ self + " in configuration "+c+" in group "+ group)
+      c +=1 // move to next config
+      val ri = mutable.Map.empty[NetAddress, Int];
+      for (node <- group){
+        ri += (node -> c)
+      }
+      val kv = create(classOf[KVService], Init.NONE) // pass value at handover?
+      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c),ri ))
+      val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
+      val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group))
+
+      // todo: when should they be started?
+      trigger(new Start() -> kv.control())
+      trigger(new Start() -> consensus.control())
+      trigger(new Start() -> gossipLeaderElection.control())
+      trigger(new Start() -> eventuallyPerfectFailureDetector.control())
+
+
+      // BallotLeaderElection (for paxos)
+      connect[Timer](timer -> gossipLeaderElection)
+      connect[Network](net -> gossipLeaderElection)
+
+      // Paxos
+      connect[BallotLeaderElection](gossipLeaderElection -> consensus)
+      connect[Network](net -> consensus)
+
+      // KV
+      connect[Network](net -> kv)
+      connect[SequenceConsensus](consensus -> kv)
+
+      //EPFD
+      connect[Network](net -> eventuallyPerfectFailureDetector)
+      connect[Timer](timer -> eventuallyPerfectFailureDetector)
+
+
+
+      log.debug("Triggering STOP proposal and start new node"+ self + " in configuration "+c+" in group "+ group )
+      for (node <- group) {
+        trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
+      }
     }
   }
 

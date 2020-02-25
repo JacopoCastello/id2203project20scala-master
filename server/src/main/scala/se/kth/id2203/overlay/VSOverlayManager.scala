@@ -112,12 +112,13 @@ class VSOverlayManager extends ComponentDefinition {
       if (nodes.contains(p) && !suspected_nodes.contains(p)) {
         log.debug("Suspecting " + p + " creating new replicas")
         trigger(BootNewReplica(self, group-p) -> boot); //how do we avoid to start many?
-        log.debug("Suspecting " + p + " triggering STOP proposal and remove from lut")
+        log.debug("Suspecting " + p + " remove from lut")
         lut.get.removeNodefromGroup(p, groupidx)
         suspected_nodes += p
-        for (node <- group) {
+        //moved to KVParent
+     /*   for (node <- group) {
           trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
-        }
+        }*/
       }
     }
      case Restore(p:NetAddress) => {

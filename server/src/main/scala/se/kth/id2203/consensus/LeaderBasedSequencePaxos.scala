@@ -100,7 +100,11 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
 
   // learner state
-  var ld = sigma.size
+  if(sigma.isEmpty){
+    var ld = 0
+  }else{
+    var ld = sigma.size
+  }
 
 
     def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
@@ -267,6 +271,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(a, Accepted(n, m)) => {
         if ((n == nL) && (state == (LEADER, ACCEPT))) {
           las((a.src, ri(a.src))) = m;
+          // todo: this gives an error: get java.lang.IndexOutOfBoundsException: 0
           var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
             lc = m;
