@@ -48,9 +48,14 @@ class VSOverlayManager extends ComponentDefinition {
   //******* Ports ******
   val route = provides(Routing);
   val boot = requires(Bootstrapping);
-  val net = requires[Network];
+  //val net = requires[Network];
+  val net: PositivePort[Network] = requires[Network]
   val timer = requires[Timer];
-  val epfd = requires[EventuallyPerfectFailureDetector]
+  val epfd = requires[EventuallyPerfectFailureDetector];
+
+  //// Reconfiguration todo: define a port for starting new replicas or a component for replicas
+  val replica =  provides[ReplicaMsg];
+
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private var lut: Option[LookupTable] = None; // --> go to LookupTable
@@ -90,6 +95,39 @@ class VSOverlayManager extends ComponentDefinition {
         case None => log.info("Rejecting connection request from ${header.src}, as system is not ready, yet.");
       }
     }
+
+    case NetMessage(header,Suspect(p: NetAddress)) => {
+      val nodes = lut.get.getNodes();
+      val group = lut.get.getNodesforGroup(p)
+      val groupidx = lut.get.getKeyforNode(p)
+      if (nodes.contains(p) && !suspected_nodes.contains(p)) {
+        log.debug("Suspecting " + p + " creating new replicas")
+        // todo: does not work: msg des not arrive at kvparent
+        trigger(NetMessage(self, self, BootNewReplica(self, group-p)) -> net);
+        log.debug("Suspecting " + p + " remove from lut")
+        lut.get.removeNodefromGroup(p, groupidx)
+        suspected_nodes += p
+        //moved to KVParent
+        /*   for (node <- group) {
+             trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
+           }*/
+      }
+
+    }
+
+    case NetMessage(header,Restore(p: NetAddress)) => {
+      val groupidx = lut.get.getKeyforNode(p)
+      if(suspected_nodes.contains(p)){
+        log.debug("Restore " + p + "add back to lut")
+        suspected_nodes -= p
+        // todo: should we put it back?
+        lut.get.addNodetoGroup(p,groupidx)
+        /*for (node <- group){
+          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
+        }*/
+      }
+
+    }
   }
 
   route uponEvent {
@@ -104,7 +142,7 @@ class VSOverlayManager extends ComponentDefinition {
   }
 
 
-  epfd uponEvent {
+  /*net uponEvent {
     case Suspect(p: NetAddress) => {
       val nodes = lut.get.getNodes();
       val group = lut.get.getNodesforGroup(p)
@@ -133,7 +171,5 @@ class VSOverlayManager extends ComponentDefinition {
         }*/
       }
     }
-
-
-  }
+  }*/
 }
