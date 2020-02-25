@@ -87,7 +87,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   val lds = mutable.Map.empty[(NetAddress, Int), Int];                                    // length of longest known decided sequence per acceptor
   for (r <- ri){
     las += (r -> sigma.size)
-    lds += (r -> -1);
+    lds += (r -> 0);
   }
   var propCmds = List.empty[RSM_Command];                                                 //set of commands that need to be appended to the log
   var lc = sigma.size;                                                                    //length of longest chosen sequence
@@ -100,12 +100,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
 
   // learner state
-  if(sigma.isEmpty){
-    var ld = 0
-  }else{
-    var ld = sigma.size
-  }
-
+  var   ld = sigma.size
 
     def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
       s.drop(l)
@@ -146,7 +141,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           log.info(s"PAXOS finds STOP in final sequence: \n")
           true
         }
-          false
       }
       false
     }
@@ -163,7 +157,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
           for (r <- ri) {
             las += (r -> sigma.size);
-            lds += (r -> -1);
+            lds += (r -> 0);
           }
           lds(rself) = ld;
           lc = sigma.size;
@@ -195,7 +189,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         else if (state == (LEADER, ACCEPT) && !stopped()) {
           va = va ++ List(scp);
           las(rself) = va.size;
-          for (r <- rothers.filter(x => lds.get(x) != -1)) {
+          for (r <- rothers.filter(x => lds.get(x) != 0)) {
             trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
           }
         }
@@ -275,7 +269,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
             lc = m;
-            for (p <- others if lds((p, c)) != -1) {
+            for (p <- pi if lds((p, c)) != -1) {
               trigger(NetMessage(self, p, Decide(lc, nL)) -> net);
             }
           }
