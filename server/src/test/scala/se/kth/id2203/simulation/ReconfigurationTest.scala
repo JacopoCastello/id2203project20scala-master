@@ -135,7 +135,7 @@ object SimpleScenarioReconfiguration {
     //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
     val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
     val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
-    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
+    val stopServerOp = raise(1, this.stopServerOp, 3.toN).arrival(constant(1.second));
     startCluster andThen
       100.seconds afterTermination startClients andThen
       10.seconds afterTermination stopServerOp andThen

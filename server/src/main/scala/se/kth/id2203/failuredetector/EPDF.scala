@@ -95,7 +95,7 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
         } else if (alive.contains(p) && suspected.contains(p)) {
           suspected = suspected - p;
           log.info("Restored: " + p)
-          trigger(Restore(p) -> net);
+          trigger(NetMessage(self, self,Restore(p)) -> net);
         }
         trigger(NetMessage(self, p, HeartbeatRequest(seqnum)) -> net);
       }

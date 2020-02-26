@@ -57,7 +57,7 @@ object ReconfigurationState extends Enumeration {
   val WAITING, RUNNING, HELPING = Value;
 }*/
 
-case class SC_Handover(sender:NetAddress ,cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
+case class SC_Handover(cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
 
 class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends ComponentDefinition {
 
@@ -83,8 +83,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
   // reconfig
   var sigma = List.empty[RSM_Command];                // the final sequence from the previous configuration or () if i = 0
-  //var state = (FOLLOWER, UNKNOWN);
-  //var leader: Option[NetAddress] = None;
 
   // proposer state
   var nL= (c,0l); //var nL = 0l;
@@ -151,6 +149,25 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       false
     }
 
+  // Handover
+  net uponEvent {
+    case NetMessage(sender, SC_Handover(cOld, sigmaOld)) => { //assuption that new replica already exists
+      if(sender.src == self && cOld == c-1 && sigmaOld.last.command.opType =="STOP"){
+        log.info(s"Handing over sigma at: "+self+" from config "+cOld+" to "+ c)
+        sigma = sigmaOld
+        las.clear()
+        for (r <- ri){
+          las += (r -> sigma.size)
+        }
+        lc = sigma.size;
+        va = sigma;
+        ld = sigma.size
+        state = (state._1, state._2, "RUNNING")
+      }
+    }
+  }
+
+    // Leader election
     ble uponEvent {
       case BLE_Leader(l, b) => {
         log.info(s"Proposing leader: $l [$self] \n")
@@ -184,7 +201,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     // upon connectionlost
     // upon preparereq
 
-
+    // Consensus
     sc uponEvent {
       case SC_Propose(scp) => {
         log.info(s"The command {} was proposed!", scp.command.opType)
@@ -198,19 +215,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           for (r <- rothers.filter(x => lds.get(x) != -1)) {
             trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
           }
-        }
-      } //todo: define handover strategy
-        case SC_Handover(sender, cOld, sigmaOld) => { //assuption that new replica already exists
-        if(sender == self && cOld == c-1 && sigmaOld.last.command.opType =="STOP"){
-          sigma = sigmaOld
-          las.clear()
-            for (r <- ri){
-              las += (r -> sigma.size)
-            }
-            lc = sigma.size;
-            va = sigma;
-            ld = sigma.size
-          state = (state._1, state._2, "RUNNING")
         }
       }
     }
@@ -312,6 +316,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           while (ld < l) {
             if (va(ld).command.opType == "STOP"){
               state = (state._1, state._2, "HELPING");
+              //var finalseq = va.slice(0, ld)
+              trigger(NetMessage(self, self, SC_Handover(c, va)) -> net)
             }
             trigger(SC_Decide(va(ld)) -> sc);
             ld = ld + 1;
