@@ -151,6 +151,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       false
     }
 
+
+
     ble uponEvent {
       case BLE_Leader(l, b) => {
         log.info(s"Proposing leader: $l [$self] \n")
@@ -204,6 +206,24 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
 
     net uponEvent {
+      case NetMessage(sender, SC_Handover(cOld, sigmaOld)) => {
+        if(sender.src == self && cOld == c-1 && sigmaOld.last.command.opType == "STOP"){
+          log.info("Handover")
+          sigma = sigmaOld
+          las.clear()
+          if(sender == self && cOld == c-1 && sigmaOld.last.command.opType =="STOP"){
+            sigma = sigmaOld
+            las.clear()
+            for (r <- ri){
+              las += (r -> sigma.size)
+            }
+            lc = sigma.size;
+            va = sigma;
+            ld = sigma.size
+            state = (state._1, state._2, "RUNNING")
+          }
+        }
+      }
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
         log.info(s"Value of p: ${a.src}")
         log.info(s"Value of np: ${n}")
