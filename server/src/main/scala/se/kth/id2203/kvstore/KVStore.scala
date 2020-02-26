@@ -71,7 +71,13 @@ class PersistentStorage(address: String) {
 
 //case class OperationToPropose(source: NetAddress, command: Operation, confReplicagroup: Set[NetAddress], confNumber: Int, confRID: mutable.Map[NetAddress, Int]) extends ProposedOpTrait
 case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait
-class KVService extends ComponentDefinition {
+class KVService(init: Init[KVService])  extends ComponentDefinition {
+
+  var (c) = init match {
+    case Init(
+    c: Int)                                             // configuration
+    => ( c)
+  }
 
   //******* Ports ******
   val net = requires[Network];

@@ -32,13 +32,14 @@ class KVParent extends ComponentDefinition {
       val topology: Set[NetAddress] = assignment.getNodesforGroup(self)
       //val topology = assignment.getNodes()
 
-      val kv = create(classOf[KVService], Init.NONE)
       // initial creation configuration 0. At the new configuration, the KVStoreParent should be passed the id
       c = 0;
       val ri = mutable.Map.empty[NetAddress, Int];
       for (node <- topology) {
         ri += (node -> c)
       }
+
+      val kv = create(classOf[KVService], Init[KVService](c))
       val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c), ri,  ("FOLLOWER", "UNKNOWN", "RUNNING")))
       //val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology ))
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
@@ -81,7 +82,7 @@ class KVParent extends ComponentDefinition {
           ri += (node -> c)
         }
      // for (node <- group) {
-        val kv = create(classOf[KVService], Init.NONE) // pass value at handover?
+        val kv = create(classOf[KVService],Init[KVService](c)) // pass value at handover?
         val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c), ri, ("FOLLOWER", "UNKNOWN", "WAITING")))
         val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
         val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group))
