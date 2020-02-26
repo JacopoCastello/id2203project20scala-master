@@ -102,15 +102,14 @@ class VSOverlayManager extends ComponentDefinition {
       val groupidx = lut.get.getKeyforNode(p)
       if (nodes.contains(p) && !suspected_nodes.contains(p)) {
         log.debug("Suspecting " + p + " creating new replicas")
-        // todo: does not work: msg des not arrive at kvparent
-        trigger(NetMessage(self, self, BootNewReplica(self, group-p)) -> net);
+        // todo: how to start replica for all
+        //for (node <- group-p){
+          trigger(NetMessage(self, self, BootNewReplica(self, group-p)) -> net);
+       // }
+
         log.debug("Suspecting " + p + " remove from lut")
         lut.get.removeNodefromGroup(p, groupidx)
         suspected_nodes += p
-        //moved to KVParent
-        /*   for (node <- group) {
-             trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
-           }*/
       }
 
     }
@@ -122,9 +121,7 @@ class VSOverlayManager extends ComponentDefinition {
         suspected_nodes -= p
         // todo: should we put it back?
         lut.get.addNodetoGroup(p,groupidx)
-        /*for (node <- group){
-          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
-        }*/
+
       }
 
     }

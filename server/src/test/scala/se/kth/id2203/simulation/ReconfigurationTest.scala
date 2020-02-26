@@ -67,8 +67,8 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     SimulationResult += ("operations" -> "SimpleOperation")
     SimulationResult += ("nMessages" -> nMessages);
     simpleBootScenario.simulate(classOf[LauncherComp]);
-  //  val simpleBootScenariokill = SimpleScenarioReconfiguration.scenariokill(3);
-   // simpleBootScenariokill.simulate(classOf[LauncherComp]);
+    val simpleBootScenariokill = SimpleScenarioReconfiguration.scenariokill(3);
+    simpleBootScenariokill.simulate(classOf[LauncherComp]);
     /* for (i <- 0 to nMessages) {
        SimulationResult.get[String](s"test$i") should be(Some("None"));
        // of course the correct response should be Success not NotImplemented, but like this the test passes
@@ -135,9 +135,21 @@ object SimpleScenarioReconfiguration {
     //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
     val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
     val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
-    val stopServerOp = raise(1, this.stopServerOp, 3.toN).arrival(constant(1.second));
+    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
     startCluster andThen
-      100.seconds afterTermination startClients andThen
+      100.seconds afterTermination startClients
+     // 10.seconds afterTermination stopServerOp andThen
+      //100.seconds afterTermination Terminate
+  }
+
+  def scenariokill(servers: Int): JSimulationScenario = {
+
+    //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
+    val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
+    val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
+    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
+    startCluster andThen
+      //100.seconds afterTermination startClients andThen
       10.seconds afterTermination stopServerOp andThen
       10000.seconds afterTermination Terminate
   }

@@ -53,7 +53,7 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
     case Init(self: NetAddress, topology: Set[NetAddress]) => (self, topology)
   }
 
-  val delta = 1000000
+  val delta = 100000
 
   //mutable state
   var period = delta

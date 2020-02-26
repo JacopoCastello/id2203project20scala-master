@@ -74,7 +74,7 @@ class KVParent extends ComponentDefinition {
       //todo: find out how to send it via replica
  /* replica uponEvent {
         case  BootNewReplica(sender: NetAddress, group: Set[NetAddress]) =>{*/
-      print("Boot new replica for node"+ self + " in configuration "+c+" in group "+ group)
+      log.info("Boot new replica for node"+ self + " in configuration "+c+" in group "+ group)
       c +=1 // move to next config
       val ri = mutable.Map.empty[NetAddress, Int];
       for (node <- group){
