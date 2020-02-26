@@ -77,7 +77,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     rself: (NetAddress, Int),                        // Repnumber of this one
     ri:mutable.Map[NetAddress, Int],
     state:(String,String,String))                   // set of replicas in config c (ip:port, Repnumber
-    => (addr, pi, c, rself, ri, state ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
+    => (addr, pi, c, rself, ri, state, ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
   }
 
 

@@ -42,6 +42,27 @@ trait ProposedOpTrait extends RSM_Command {
   def confRID: mutable.Map[NetAddress, Int]*/
 }
 
+class PersistentStorage(address: String) {
+  def init(){
+    new java.io.File(address).mkdirs
+  }
+  def addEntry(key: String, value: String){
+    val fileName = address.toString + s"$key"
+    val file = new File(fileName)
+    val bw = new FileWriter(file, false)
+    bw.write(s"$value")
+    bw.close()
+  }
+  def getValue(key: String): String = {
+    val fileName = address.toString + s"$key"
+    if (Files.exists(Paths.get(fileName))) {
+      Source.fromFile(s"$key").mkString
+    } else {
+      "None"
+    }
+  }
+}
+
 //case class OperationToPropose(source: NetAddress, command: Operation, confReplicagroup: Set[NetAddress], confNumber: Int, confRID: mutable.Map[NetAddress, Int]) extends ProposedOpTrait
 case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait
 class KVService extends ComponentDefinition {
@@ -53,25 +74,8 @@ class KVService extends ComponentDefinition {
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private val storage = mutable.Map.empty[String, String]
+  val persistentStorage = new PersistentStorage(self.getIp().toString())
 
-  object persistentStorage {
-    def init(){
-      new java.io.File(self.toString).mkdirs
-    }
-    def addEntry(key: String, value: String): Unit ={
-      val writer = new PrintWriter(new File(s"$key.txt"))
-      writer.write(s"$value")
-      writer.close()
-    }
-    def getValue(key: String): Unit ={
-      val fileName = self.toString + s"$key"
-      if (Files.exists(Paths.get("fileName"))) {
-        Source.fromFile(s"$key").mkString
-      } else {
-        None
-      }
-    }
-  }
   //******* Handlers ******
   net uponEvent {
     case NetMessage(header, op: Op) => {
@@ -106,27 +110,31 @@ class KVService extends ComponentDefinition {
           log.info(s"Handling operation {}!", command)
 
           //trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.getOrElse(command.key, "None"))) -> net)
-          trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.getOrElse(command.key, "None"))) -> net)
+          trigger(NetMessage(self, source, command.response(OpCode.Ok, persistentStorage.getValue(command.key))) -> net)
         case "PUT" =>
           log.info(s"Handling operation {}!", command)
-          storage += (command.key -> command.value)
+          //storage += (command.key -> command.value)
+          persistentStorage.addEntry(command.key, command.value)
           log.info("storage at: "+ self + " is "+ storage)
           trigger(NetMessage(self, source, command.response(OpCode.Ok, command.value)) -> net)
         case "CAS" =>
           log.info(s"Handling operation {}!", command)
-          val result = storage.get(command.key) match {
-            case Some(value) => {
+          val result = persistentStorage.getValue(command.key) match {
+          //val result = storage.get(command.key) match {
+            case value => {
               // Only perform the operation if it is the same
               if (command.expected != "" && command.expected == value) {
-                storage(command.key) = command.value
+                persistentStorage.addEntry(command.key, command.value)
+                //storage(command.key) = command.value
               }
               log.info("storage at: "+ self + " is "+ storage)
               value
             }
-            case None => {
+            case "None" => {
               // Only add if it is expected to be empty
               if (command.expected.isEmpty) {
-                storage += (command.key -> command.value)
+                //storage += (command.key -> command.value)
+                persistentStorage.addEntry(command.key, command.value)
               }
               None
             }
