@@ -109,6 +109,9 @@ class KVService extends ComponentDefinition {
             }
           }
           trigger(NetMessage(self, source, command.response(OpCode.Ok, result.toString)) -> net)
+        case "STOP" =>
+          log.info(s"Handling operation {}!", command)
+       
       }
     }
   }

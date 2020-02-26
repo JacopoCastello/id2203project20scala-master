@@ -28,6 +28,7 @@ import java.net.{InetAddress, UnknownHostException}
 import org.scalatest._
 import se.kth.id2203.ParentComponent
 import se.kth.id2203.networking._
+import se.kth.id2203.simulation.SimpleScenario.{startClientOp, startServerOp}
 import se.sics.kompics.network.Address
 import se.sics.kompics.simulator.result.SimulationResultSingleton
 import se.sics.kompics.simulator.run.LauncherComp
@@ -66,6 +67,8 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     SimulationResult += ("operations" -> "SimpleOperation")
     SimulationResult += ("nMessages" -> nMessages);
     simpleBootScenario.simulate(classOf[LauncherComp]);
+  //  val simpleBootScenariokill = SimpleScenarioReconfiguration.scenariokill(3);
+   // simpleBootScenariokill.simulate(classOf[LauncherComp]);
     /* for (i <- 0 to nMessages) {
        SimulationResult.get[String](s"test$i") should be(Some("None"));
        // of course the correct response should be Success not NotImplemented, but like this the test passes
@@ -130,13 +133,13 @@ object SimpleScenarioReconfiguration {
   def scenario(servers: Int): JSimulationScenario = {
 
     //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
-    val startCluster = raise(servers, this.startServerOp, 1.toN).arrival(constant(1.second));
-    val startClients = raise(1, this.startClientOp, 1.toN).arrival(constant(1.second));
-    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second))
-
+    val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
+    val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
+    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
     startCluster andThen
-      200.seconds afterStart stopServerOp andThen
       100.seconds afterTermination startClients andThen
-      200.seconds afterTermination Terminate
+      10.seconds afterTermination stopServerOp andThen
+      10000.seconds afterTermination Terminate
   }
+
 }
