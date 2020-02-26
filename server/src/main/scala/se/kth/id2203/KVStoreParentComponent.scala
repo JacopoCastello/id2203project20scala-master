@@ -39,7 +39,7 @@ class KVParent extends ComponentDefinition {
       for (node <- topology) {
         ri += (node -> c)
       }
-      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c), ri))
+      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c), ri,  ("FOLLOWER", "UNKNOWN", "RUNNING")))
       //val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology ))
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
       val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology))
@@ -81,7 +81,7 @@ class KVParent extends ComponentDefinition {
         ri += (node -> c)
       }
       val kv = create(classOf[KVService], Init.NONE) // pass value at handover?
-      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c),ri ))
+      val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c),ri, ("FOLLOWER", "UNKNOWN", "WAITING") ))
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
       val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group))
 

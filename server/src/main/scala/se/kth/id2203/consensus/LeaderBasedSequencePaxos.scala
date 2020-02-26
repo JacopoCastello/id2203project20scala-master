@@ -42,7 +42,7 @@ import scala.collection.mutable
 
   case class Decide(ld: Int, nL: (Int,Long)) extends KompicsEvent;
 
-  object State extends Enumeration {
+/*  object State extends Enumeration {
     type State = Value;
     val PREPARE, ACCEPT, UNKNOWN, RECOVER = Value;
   }
@@ -55,21 +55,21 @@ import scala.collection.mutable
 object ReconfigurationState extends Enumeration {
   type ReconfigurationState = Value;
   val WAITING, RUNNING, HELPING = Value;
-}
+}*/
 
-
+case class SC_Handover(sender:NetAddress ,cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
 
 class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends ComponentDefinition {
 
-    import Role._
-    import State._
+    //import Role._
+    //import State._
 
     val sc = provides[SequenceConsensus];
     val ble = requires[BallotLeaderElection];
     val net = requires[Network]
 
   // initialize:  self, topology, c, (self, c),ri
-  val (self, pi, c, rself, ri, state, rothers, others) = init match {
+  var (self, pi, c, rself, ri, state, rothers, others) = init match {
     case Init(
     addr: NetAddress,
     pi: Set[NetAddress] @unchecked,                     // set of processes in config c
@@ -77,7 +77,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     rself: (NetAddress, Int),                        // Repnumber of this one
     ri:mutable.Map[NetAddress, Int],
     state:(String,String,String))                   // set of replicas in config c (ip:port, Repnumber
-    => (addr, pi, c, rself, ri, state ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
+    => (addr, pi, c, rself, ri, state, ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
   }
 
 
@@ -167,7 +167,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
           lds(rself) = ld;
           lc = sigma.size;
-          state = (LEADER, PREPARE);
+          state = ("LEADER", "PREPARE", "RUNNING");
           for (r <- rothers) {
             trigger(NetMessage(self, r._1, Prepare(nL, ld, na)) -> net);
           }
@@ -175,7 +175,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       //  } else if (state == (state._1, RECOVER)) {
           // send (PrepareReq) to l
         } else {
-          state = (FOLLOWER, state._2);
+          state = ("FOLLOWER", state._2, "RUNNING");
         }
 
       }
@@ -189,10 +189,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case SC_Propose(scp) => {
         log.info(s"The command {} was proposed!", scp.command.opType)
         log.info(s"The current state of the node is {}", state)
-        if (state == (LEADER, PREPARE)) {
+        if (state == ("LEADER", "PREPARE", "RUNNING")) {
           propCmds = propCmds ++ List(scp);
         }
-        else if (state == (LEADER, ACCEPT) && !stopped()) {
+        else if (state == ("LEADER", "ACCEPT", "RUNNING") && !stopped()) {
           va = va ++ List(scp);
           las(rself) = va.size;
           for (r <- rothers.filter(x => lds.get(x) != -1)) {
@@ -200,18 +200,19 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
         }
       } //todo: define handover strategy
-      /*  case SC_Handover(src,configuration, previous_finalsequence) => { //assuption that new replica already exists
-        if(src == self && configuration < c && sigma.isEmpty){
-          sigma = previous_finalsequence
-           las = mutable.Map.empty[(NetAddress, Int), Int];
+        case SC_Handover(sender, cOld, sigmaOld) => { //assuption that new replica already exists
+        if(sender == self && cOld == c-1 && sigmaOld.last.command.opType =="STOP"){
+          sigma = sigmaOld
+          las.clear()
             for (r <- ri){
               las += (r -> sigma.size)
             }
             lc = sigma.size;
             va = sigma;
             ld = sigma.size
+          state = (state._1, state._2, "RUNNING")
         }
-      } */
+      }
     }
 
 
@@ -219,7 +220,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
         log.info(s"Value of p: ${a.src}")
         log.info(s"Value of np: ${n}")
-        if ((n == nL) && (state == (LEADER, PREPARE))) {
+        if ((n == nL) && (state == ("LEADER", "PREPARE", "RUNNING"))) {
           log.info(s"Promise issued with leader: ${a.src}")
           promises((a.src, ri(a.src))) = (na, sfxa);
           lds((a.src, ri(a.src))) = lda;
@@ -249,14 +250,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
                 }
               }
               las((self, c)) = va.size;
-              state = (LEADER, ACCEPT);
+              state = ("LEADER", "ACCEPT","RUNNING");
             }
             for (r <- rothers.filter(x => lds(x) != -1 )) {//&& lds(x) != va.size
               var sfxp = suffix(va, lds(r))
               trigger(NetMessage(self, r._1, AcceptSync(nL, sfxp, lds(r))) -> net);
             }
           }
-        } else if ((n == nL) && (state == (LEADER, ACCEPT))) {
+        } else if ((n == nL) && (state == ("LEADER", "ACCEPT","RUNNING"))) {
           log.info(s"Late request for Promise from: ${a.src}")
           lds((a.src, ri(a.src))) = lda;
           var sfx = suffix(va, lds((a.src, ri(a.src))));
@@ -267,7 +268,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       }
       case NetMessage(a, Accepted(n, m)) => {
-        if ((n == nL) && (state == (LEADER, ACCEPT))) {
+        if ((n == nL) && (state == ("LEADER", "ACCEPT", "RUNNING"))) {
           las((a.src, ri(a.src))) = m;
           var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
@@ -284,7 +285,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
        // if (compareGreater(nProm, np)) {
         if (compareGreater(np, nProm)) {
           nProm = np;
-          state = (FOLLOWER, PREPARE);
+          state = ("FOLLOWER", "PREPARE", "RUNNING");
           var sfx = List.empty[RSM_Command];
           if (compareGreaterEqual(na, nal)) {
             sfx = suffix(va, ldp);
@@ -293,15 +294,15 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         }
       }
       case NetMessage(p, AcceptSync(localnL, sfx, ldp)) => {
-        if ((nProm == localnL) && (state == (FOLLOWER, PREPARE))) {
+        if ((nProm == localnL) && (state == ("FOLLOWER", "PREPARE", "RUNNING"))) {
           na = localnL;
           va = prefix(va, ldp) ++ sfx;
-          state = (FOLLOWER, ACCEPT);
+          state = ("FOLLOWER", "ACCEPT","RUNNING");
           trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
         }
       }
       case NetMessage(p, Accept(localnL, cmd)) => {
-        if ((nProm == localnL) && (state == (FOLLOWER, ACCEPT))) {
+        if ((nProm == localnL) && (state == ("FOLLOWER", "ACCEPT", "RUNNING"))) {
           va = va ++ List(cmd);
           trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
         }
@@ -309,6 +310,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(_, Decide(l, localnL)) => {
         if (nProm == localnL) {
           while (ld < l) {
+            if (va(ld).command.opType == "STOP"){
+              state = (state._1, state._2, "HELPING");
+            }
             trigger(SC_Decide(va(ld)) -> sc);
             ld = ld + 1;
           }

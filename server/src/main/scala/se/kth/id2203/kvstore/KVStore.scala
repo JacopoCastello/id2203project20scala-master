@@ -29,7 +29,10 @@ import se.kth.id2203.overlay.Routing
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
 
-import scala.collection.mutable;
+import scala.collection.mutable
+// File handling program
+import java.io.File
+import java.io.PrintWriter
 
 trait ProposedOpTrait extends RSM_Command {
   def source: NetAddress
@@ -50,6 +53,10 @@ class KVService extends ComponentDefinition {
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private val storage = mutable.Map.empty[String, String]
+
+  // Creating a file
+  // val file_Object = new File(self.getIp()+".txt")
+  // val print_Writer = new PrintWriter(file_Object)
 
   //******* Handlers ******
   net uponEvent {
@@ -111,7 +118,7 @@ class KVService extends ComponentDefinition {
           trigger(NetMessage(self, source, command.response(OpCode.Ok, result.toString)) -> net)
         case "STOP" =>
           log.info(s"Handling operation {}!", command)
-       
+
       }
     }
   }
