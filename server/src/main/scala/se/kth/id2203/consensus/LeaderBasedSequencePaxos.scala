@@ -69,21 +69,21 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     val net = requires[Network]
 
   // initialize:  self, topology, c, (self, c),ri
-  val (self, pi, c, rself, ri, state, rothers, others) = init match {
+  val (self, pi, c, rself, ri, rothers, others) = init match {
     case Init(
     addr: NetAddress,
     pi: Set[NetAddress] @unchecked,                     // set of processes in config c
     c: Int,                                              // configuration c
     rself: (NetAddress, Int),                        // Repnumber of this one
-    ri:mutable.Map[NetAddress, Int],
-    state:(String,String,String))                   // set of replicas in config c (ip:port, Repnumber
-    => (addr, pi, c, rself, ri, state, ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
+    ri:mutable.Map[NetAddress, Int])
+    //state:(String,String,String))                   // set of replicas in config c (ip:port, Repnumber
+    => (addr, pi, c, rself, ri, ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
   }
 
 
   // reconfig
   var sigma = List.empty[RSM_Command];                // the final sequence from the previous configuration or () if i = 0
-  //var state = (FOLLOWER, UNKNOWN);
+  var state = (FOLLOWER, UNKNOWN);
   //var leader: Option[NetAddress] = None;
 
   // proposer state

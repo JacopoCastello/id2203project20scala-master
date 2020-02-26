@@ -23,16 +23,17 @@
  */
 package se.kth.id2203.kvstore;
 
+import java.io._
+import java.nio.file.{Files, Paths}
+
 import se.kth.id2203.consensus.{RSM_Command, SC_Decide, SC_Propose, SequenceConsensus}
 import se.kth.id2203.networking._
 import se.kth.id2203.overlay.Routing
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
-import java.io._
-import scala.io.Source
-import java.nio.file.{Paths, Files}
 
-import scala.collection.mutable;
+import scala.collection.mutable
+import scala.io.Source;
 
 trait ProposedOpTrait extends RSM_Command {
   def source: NetAddress
@@ -43,20 +44,25 @@ trait ProposedOpTrait extends RSM_Command {
 }
 
 class PersistentStorage(address: String) {
-  def init(){
-    new java.io.File(address).mkdirs
-  }
+  val dirName = new java.io.File(".").getCanonicalPath + "/server/src/main/scala/se/kth/id2203/kvstore/data/" + address;
+
+  val dir = new File(dirName)
+  if (!dir.exists())
+    dir.mkdirs()
+
+
   def addEntry(key: String, value: String){
-    val fileName = address.toString + s"$key"
+    val fileName = dirName + s"/$key"
     val file = new File(fileName)
-    val bw = new FileWriter(file, false)
+    val bw = new BufferedWriter(new FileWriter(file))
     bw.write(s"$value")
     bw.close()
   }
+
   def getValue(key: String): String = {
-    val fileName = address.toString + s"$key"
+    val fileName = dirName + s"/$key"
     if (Files.exists(Paths.get(fileName))) {
-      Source.fromFile(s"$key").mkString
+      Source.fromFile(fileName).mkString
     } else {
       "None"
     }
@@ -74,6 +80,7 @@ class KVService extends ComponentDefinition {
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private val storage = mutable.Map.empty[String, String]
+  log.info(new java.io.File(".").getCanonicalPath)
   val persistentStorage = new PersistentStorage(self.getIp().toString())
 
   //******* Handlers ******
@@ -121,6 +128,14 @@ class KVService extends ComponentDefinition {
           log.info(s"Handling operation {}!", command)
           val result = persistentStorage.getValue(command.key) match {
           //val result = storage.get(command.key) match {
+            case "None" => {
+              // Only add if it is expected to be empty
+              if (command.expected.isEmpty) {
+                //storage += (command.key -> command.value)
+                persistentStorage.addEntry(command.key, command.value)
+              }
+              None
+            }
             case value => {
               // Only perform the operation if it is the same
               if (command.expected != "" && command.expected == value) {
@@ -130,14 +145,7 @@ class KVService extends ComponentDefinition {
               log.info("storage at: "+ self + " is "+ storage)
               value
             }
-            case "None" => {
-              // Only add if it is expected to be empty
-              if (command.expected.isEmpty) {
-                //storage += (command.key -> command.value)
-                persistentStorage.addEntry(command.key, command.value)
-              }
-              None
-            }
+
           }
           trigger(NetMessage(self, source, command.response(OpCode.Ok, result.toString)) -> net)
         case "STOP" =>
