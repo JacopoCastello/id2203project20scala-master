@@ -149,7 +149,11 @@ class KVService extends ComponentDefinition {
           }
           trigger(NetMessage(self, source, command.response(OpCode.Ok, result.toString)) -> net)
         case "STOP" =>
-          log.info(s"Handling operation {}!", command)
+          if (source == self){
+            log.info(s"KV received Handover from "+source+ "at "+ self)
+          }
+
+
        
       }
     }
