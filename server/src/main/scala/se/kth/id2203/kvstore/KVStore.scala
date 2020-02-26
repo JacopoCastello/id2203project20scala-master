@@ -28,6 +28,9 @@ import se.kth.id2203.networking._
 import se.kth.id2203.overlay.Routing
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
+import java.io._
+import scala.io.Source
+import java.nio.file.{Paths, Files}
 
 import scala.collection.mutable;
 
@@ -51,9 +54,28 @@ class KVService extends ComponentDefinition {
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   private val storage = mutable.Map.empty[String, String]
 
+  object persistentStorage {
+    def init(){
+      new java.io.File(self.toString).mkdirs
+    }
+    def addEntry(key: String, value: String): Unit ={
+      val writer = new PrintWriter(new File(s"$key.txt"))
+      writer.write(s"$value")
+      writer.close()
+    }
+    def getValue(key: String): Unit ={
+      val fileName = self.toString + s"$key"
+      if (Files.exists(Paths.get("fileName"))) {
+        Source.fromFile(s"$key").mkString
+      } else {
+        None
+      }
+    }
+  }
   //******* Handlers ******
   net uponEvent {
     case NetMessage(header, op: Op) => {
+      val fileName = self.toString +
       log.info("Got operation {}!", op);
     }
   }
@@ -83,6 +105,7 @@ class KVService extends ComponentDefinition {
         case "GET" =>
           log.info(s"Handling operation {}!", command)
 
+          //trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.getOrElse(command.key, "None"))) -> net)
           trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.getOrElse(command.key, "None"))) -> net)
         case "PUT" =>
           log.info(s"Handling operation {}!", command)
