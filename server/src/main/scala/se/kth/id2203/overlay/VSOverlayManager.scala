@@ -103,11 +103,7 @@ class VSOverlayManager extends ComponentDefinition {
       val groupidx = lut.get.getKeyforNode(p)
       if (!suspected_nodes.contains(p)) {
         log.debug("Suspecting " + p + " creating new replicas")
-        // todo: how to start replica for all
-        //for (node <- group-p){
           trigger(NetMessage(self, source.src, BootNewReplica(self, group-p)) -> net);
-       // }
-
         log.debug("Suspecting " + p + " remove from lut")
         lut.get.removeNodefromGroup(p, groupidx)
         suspected_nodes += p
@@ -120,7 +116,7 @@ class VSOverlayManager extends ComponentDefinition {
       if(suspected_nodes.contains(p)){
         log.debug("Restore " + p + "add back to lut")
         suspected_nodes -= p
-        // todo: should we put it back?
+        // todo: also restore it in new config
         lut.get.addNodetoGroup(p,groupidx)
 
       }
@@ -139,35 +135,4 @@ class VSOverlayManager extends ComponentDefinition {
     }
   }
 
-
-  /*net uponEvent {
-    case Suspect(p: NetAddress) => {
-      val nodes = lut.get.getNodes();
-      val group = lut.get.getNodesforGroup(p)
-      val groupidx = lut.get.getKeyforNode(p)
-      if (nodes.contains(p) && !suspected_nodes.contains(p)) {
-        log.debug("Suspecting " + p + " creating new replicas")
-        trigger(BootNewReplica(self, group-p) -> boot); //how do we avoid to start many?
-        log.debug("Suspecting " + p + " remove from lut")
-        lut.get.removeNodefromGroup(p, groupidx)
-        suspected_nodes += p
-        //moved to KVParent
-     /*   for (node <- group) {
-          trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
-        }*/
-      }
-    }
-     case Restore(p:NetAddress) => {
-       val groupidx = lut.get.getKeyforNode(p)
-      if(suspected_nodes.contains(p)){
-        log.debug("Restore " + p + "add back to lut")
-        suspected_nodes -= p
-        // todo: should we put it back?
-        lut.get.addNodetoGroup(p,groupidx)
-        /*for (node <- group){
-          trigger(NetMessage(self, node, new Op("STOP", "", s"", "")) -> net);
-        }*/
-      }
-    }
-  }*/
 }
