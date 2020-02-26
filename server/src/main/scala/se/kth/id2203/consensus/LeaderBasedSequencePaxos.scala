@@ -209,9 +209,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(sender, SC_Handover(cOld, sigmaOld)) => {
         if(sender.src == self && cOld == c-1 && sigmaOld.last.command.opType == "STOP"){
           log.info("Handover")
-          sigma = sigmaOld
-          las.clear()
-          if(sender == self && cOld == c-1 && sigmaOld.last.command.opType =="STOP"){
             sigma = sigmaOld
             las.clear()
             for (r <- ri){
@@ -221,7 +218,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             va = sigma;
             ld = sigma.size
             state = (state._1, state._2, "RUNNING")
-          }
+
         }
       }
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
@@ -319,7 +316,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           while (ld < l) {
             if (va(ld).command.opType == "STOP"){
               state = (state._1, state._2, "HELPING");
-              //var finalseq = va.slice(0, ld)
               trigger(NetMessage(self, self, SC_Handover(c, va)) -> net)
             }
             trigger(SC_Decide(va(ld)) -> sc);

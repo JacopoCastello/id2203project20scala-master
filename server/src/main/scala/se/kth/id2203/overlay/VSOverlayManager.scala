@@ -97,22 +97,25 @@ class VSOverlayManager extends ComponentDefinition {
     }
 
     case NetMessage(source,Suspect(p: NetAddress)) => {
-    // if(source.src == self){
-      val nodes = lut.get.getNodes();
-      val group = lut.get.getNodesforGroup(p)
-      val groupidx = lut.get.getKeyforNode(p)
       if (!suspected_nodes.contains(p)) {
-        log.debug("Suspecting " + p + " creating new replicas")
-          trigger(NetMessage(self, source.src, BootNewReplica(self, group-p)) -> net);
         log.debug("Suspecting " + p + " remove from lut")
-        lut.get.removeNodefromGroup(p, groupidx)
+        val groupidx = lut.get.getKeyforNode(p)
+        if(groupidx != -1) {
+          lut.get.removeNodefromGroup(p, groupidx)
+          log.debug("Suspecting " + p + " creating new replicas")
+          val newgroup = lut.get.getNodesforGroup(source.src)
+          for(node <- newgroup) {
+            trigger(NetMessage(self, node, BootNewReplica(self, newgroup)) -> net)
+          }
+        }
         suspected_nodes += p
+
       }
    //  }
     }
 
-    case NetMessage(header,Restore(p: NetAddress)) => {
-      val groupidx = lut.get.getKeyforNode(p)
+    case NetMessage(sender,Restore(p: NetAddress)) => {
+      val groupidx = lut.get.getKeyforNode(sender.src)
       if(suspected_nodes.contains(p)){
         log.debug("Restore " + p + "add back to lut")
         suspected_nodes -= p

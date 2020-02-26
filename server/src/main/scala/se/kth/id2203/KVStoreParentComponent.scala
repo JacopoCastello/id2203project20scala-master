@@ -80,6 +80,7 @@ class KVParent extends ComponentDefinition {
         for (node <- group) {
           ri += (node -> c)
         }
+     // for (node <- group) {
         val kv = create(classOf[KVService], Init.NONE) // pass value at handover?
         val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c), ri, ("FOLLOWER", "UNKNOWN", "WAITING")))
         val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
@@ -110,11 +111,11 @@ class KVParent extends ComponentDefinition {
 
 
         log.debug("Triggering STOP proposal and start new node" + self + " in configuration " + c + " in group " + group)
-        for (node <- group) {
-          trigger(NetMessage(self, node, new Op("STOP", "", "", "")) -> net);
+
+          trigger(NetMessage(self, self, new Op("STOP", "", "", "")) -> net);
         }
       }
-    }
+    //}
 
   //}
 
