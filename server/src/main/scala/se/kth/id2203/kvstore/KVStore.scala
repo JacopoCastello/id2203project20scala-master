@@ -107,10 +107,13 @@ class KVService(init: Init[KVService])  extends ComponentDefinition {
         case "STOP" => log.info("Received operation STOP from: " + src);
       }
     }
-
-      val opPropose = OperationToPropose(src.src, op)
-      trigger(SC_Propose(opPropose) -> consensus)
-      log.info("Triggering the operation: " + src);
+      if (op.opType != "STOP" || op.opType == "STOP" && op.value == c.toString){
+        val opPropose = OperationToPropose(src.src, op)
+        trigger(SC_Propose(opPropose) -> consensus)
+        log.info("Triggering the operation: " + src);
+      } else {
+        log.info("Triggering past stop command with source: " + src);
+      }
   }
 
 
@@ -156,6 +159,7 @@ class KVService(init: Init[KVService])  extends ComponentDefinition {
           trigger(NetMessage(self, source, command.response(OpCode.Ok, result.toString)) -> net)
         case "STOP" => {
           log.info(s"KV received Handover from " + source + "at " + self)
+          suicide()
         }
       }
     }

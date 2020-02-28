@@ -24,14 +24,13 @@
 package se.kth.id2203.overlay;
 
 import se.kth.id2203.bootstrapping._
+import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
 import se.kth.id2203.networking._
-import se.sics.kompics.sl._
 import se.sics.kompics.network.Network
+import se.sics.kompics.sl._
 import se.sics.kompics.timer.Timer
 
-import util.Random
-import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
-import se.kth.id2203.kvstore.Op
+import scala.util.Random
 
 /**
   * The V(ery)S(imple)OverlayManager.
@@ -54,7 +53,7 @@ class VSOverlayManager extends ComponentDefinition {
   val epfd = requires[EventuallyPerfectFailureDetector];
 
   //// Reconfiguration todo: define a port for starting new replicas or a component for replicas
-  val replica =  provides[ReplicaMsg];
+  val replica =  requires[ReplicaMsg];
 
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
@@ -105,7 +104,7 @@ class VSOverlayManager extends ComponentDefinition {
           log.debug("Suspecting " + p + " creating new replicas")
           val newgroup = lut.get.getNodesforGroup(source.src)
           for(node <- newgroup) {
-            trigger(NetMessage(self, node, BootNewReplica(self, newgroup)) -> net)
+            trigger(NetMessage(self, node, BootNewReplica(self, newgroup, lut.get)) -> net)
           }
         }
         suspected_nodes += p
@@ -124,6 +123,11 @@ class VSOverlayManager extends ComponentDefinition {
 
       }
 
+    }
+
+    case NetMessage(sender, UpdateLookUp(source, assignment: LookupTable)) => {
+      log.info("Got NodeAssignment, overlay ready.");
+      lut = Some(assignment)
     }
   }
 

@@ -38,7 +38,7 @@ import scala.collection.mutable
 
   case class Accept(nL: (Int,Long), c: RSM_Command) extends KompicsEvent;
 
-  case class Accepted(nL: (Int,Long), m: Int) extends KompicsEvent;
+  case class Accepted(nL: (Int,Long), m: Int, conf: Int) extends KompicsEvent;
 
   case class Decide(ld: Int, nL: (Int,Long)) extends KompicsEvent;
 
@@ -143,7 +143,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     // General code
     def stopped(): Boolean = {
       if (!va.isEmpty) {
-        if(va.last.command.opType == "STOP") {
+        if(va.last.command.opType == "STOP" && va.last.command.value == c.toString()) {
           log.info(s"PAXOS finds STOP in final sequence: \n")
           true
         }
@@ -218,7 +218,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             va = sigma;
             ld = sigma.size
             state = (state._1, state._2, "RUNNING")
-
         }
       }
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
@@ -239,10 +238,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             for (cmd <- propCmds) {
               comtypes = comtypes ++ List(cmd.command.opType)
             }
-            if (!va.isEmpty && va.last.command.opType == "STOP") {
+            if (!va.isEmpty && va.last.command.opType == "STOP" && va.last.command.value.toInt == c) {
               propCmds = List.empty; // commands will never be decided
             } else {
-              if (comtypes.contains("STOP")) { // ordering SSi as the last one to add to va
+              if (comtypes.contains("STOP") && va.last.command.value.toInt == c) { // ordering SSi as the last one to add to va
                 var stop = propCmds.filter(x => x.command.opType == "STOP")
                 for (cmd <- propCmds.filter(x => x.command.opType != "STOP")) {
                   va = va ++ List(cmd)
@@ -271,8 +270,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
         }
       }
-      case NetMessage(a, Accepted(n, m)) => {
-        if ((n == nL) && (state == ("LEADER", "ACCEPT", "RUNNING"))) {
+      case NetMessage(a, Accepted(n, m, conf)) => {
+        log.info("The received sequence has length: " + m)
+        if ((conf == c) && (n == nL) && (state == ("LEADER", "ACCEPT", "RUNNING"))) {
           las((a.src, ri(a.src))) = m;
           var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
@@ -302,21 +302,23 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           na = localnL;
           va = prefix(va, ldp) ++ sfx;
           state = ("FOLLOWER", "ACCEPT","RUNNING");
-          trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(localnL, va.size, c)) -> net);
         }
       }
       case NetMessage(p, Accept(localnL, cmd)) => {
         if ((nProm == localnL) && (state == ("FOLLOWER", "ACCEPT", "RUNNING"))) {
           va = va ++ List(cmd);
-          trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(localnL, va.size, c)) -> net);
         }
       }
       case NetMessage(_, Decide(l, localnL)) => {
         if (nProm == localnL) {
           while (ld < l) {
-            if (va(ld).command.opType == "STOP"){
+            if (va(ld).command.opType == "STOP" && va(ld).command.value == c.toString){
               state = (state._1, state._2, "HELPING");
               trigger(NetMessage(self, self, SC_Handover(c, va)) -> net)
+              suicide()
+              // KIll the components - triger kill on component
             }
             trigger(SC_Decide(va(ld)) -> sc);
             ld = ld + 1;

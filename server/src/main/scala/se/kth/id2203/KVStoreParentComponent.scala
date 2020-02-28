@@ -5,10 +5,10 @@ import se.kth.id2203.consensus.{BallotLeaderElection, GossipLeaderElection, Lead
 import se.kth.id2203.failuredetector.EPFD
 import se.kth.id2203.kvstore.{KVService, Op}
 import se.kth.id2203.networking.{NetAddress, NetMessage}
-import se.kth.id2203.overlay.{BootNewReplica, LookupTable, ReplicaMsg}
+import se.kth.id2203.overlay.{BootNewReplica, LookupTable, ReplicaMsg, UpdateLookUp}
 import se.sics.kompics.Start
 import se.sics.kompics.network.Network
-import se.sics.kompics.sl.{ComponentDefinition, Init, KompicsEvent, PositivePort}
+import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
 import se.sics.kompics.timer.Timer
 
 import scala.collection.mutable
@@ -43,7 +43,7 @@ class KVParent extends ComponentDefinition {
       val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c), ri,  ("FOLLOWER", "UNKNOWN", "RUNNING")))
       //val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology ))
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
-      val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology))
+      val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology, c))
 
 
       trigger(new Start() -> kv.control())
@@ -71,7 +71,7 @@ class KVParent extends ComponentDefinition {
     }
   }
   net uponEvent {
-    case NetMessage(source, BootNewReplica(sender: NetAddress, group: Set[NetAddress])) => {
+    case NetMessage(source, BootNewReplica(sender: NetAddress, group: Set[NetAddress], lut: LookupTable)) => {
       //todo: find out how to send it via replica
     //  if (source.src == self) {
         log.info("Boot new replica for node" + self + " in configuration " + c + " in group " + group)
@@ -85,7 +85,7 @@ class KVParent extends ComponentDefinition {
         val kv = create(classOf[KVService],Init[KVService](c)) // pass value at handover?
         val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c), ri, ("FOLLOWER", "UNKNOWN", "WAITING")))
         val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
-        val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group))
+        val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group, c))
 
         // todo: when should they be started?
         trigger(new Start() -> kv.control())
@@ -110,10 +110,10 @@ class KVParent extends ComponentDefinition {
         connect[Network](net -> eventuallyPerfectFailureDetector)
         connect[Timer](timer -> eventuallyPerfectFailureDetector)
 
-
+        trigger(NetMessage(self, self,UpdateLookUp(self, lut)) -> net);
         log.debug("Triggering STOP proposal and start new node" + self + " in configuration " + c + " in group " + group)
 
-          trigger(NetMessage(self, self, new Op("STOP", "", "", "")) -> net);
+          trigger(NetMessage(self, self, new Op("STOP", "", (c-1).toString, "")) -> net);
         }
       }
     //}

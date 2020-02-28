@@ -28,7 +28,6 @@ import java.net.{InetAddress, UnknownHostException}
 import org.scalatest._
 import se.kth.id2203.ParentComponent
 import se.kth.id2203.networking._
-import se.kth.id2203.simulation.SimpleScenario.{startClientOp, startServerOp}
 import se.sics.kompics.network.Address
 import se.sics.kompics.simulator.result.SimulationResultSingleton
 import se.sics.kompics.simulator.run.LauncherComp
@@ -69,10 +68,25 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     simpleBootScenario.simulate(classOf[LauncherComp]);
     //val simpleBootScenariokill = SimpleScenarioReconfiguration.scenariokill(3);
     //simpleBootScenariokill.simulate(classOf[LauncherComp]);
-    /* for (i <- 0 to nMessages) {
+     for (i <- 0 to nMessages) {
        SimulationResult.get[String](s"test$i") should be(Some("None"));
        // of course the correct response should be Success not NotImplemented, but like this the test passes
-     }*/
+     }
+  }
+  "Write then Read" should "read the writen value" in { // well of course eventually they should be implemented^^
+    val seed = 123l
+    JSimulationScenario.setSeed(seed)
+    val simpleBootScenario = SimpleScenarioReconfiguration.scenario(4)
+    val res = SimulationResultSingleton.getInstance()
+
+    SimulationResult += ("operations" -> "Write")
+    SimulationResult += ("nMessages" -> nMessages)
+
+    simpleBootScenario.simulate(classOf[LauncherComp])
+
+    for (i <- 0 to nMessages) {
+      SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+    }
   }
 }
 
@@ -99,6 +113,9 @@ object SimpleScenarioReconfiguration {
 
   private def isBootstrap(self: Int): Boolean = self == 1;
 
+  var killed = false
+  private def isKilled(): Boolean = killed == true;
+  private def setKilled(): Unit = killed = true;
   // val setUniformLatencyNetwork = () => Op.apply((_: Unit) => ChangeNetwork(NetworkModels.withUniformRandomDelay(3, 7)));
 
   val startServerOp = Op { (self: Integer) =>
@@ -117,18 +134,25 @@ object SimpleScenarioReconfiguration {
 
   val stopServerOp = Op { (self: Integer) =>
     val selfAddr = intToServerAddress(self)
+    setKilled()
     KillNode(selfAddr);
+
   };
 
   val startClientOp = Op { (self: Integer) =>
     val selfAddr = intToClientAddress(self)
-    val conf = Map(
-      "id2203.project.address" -> selfAddr,
-      "id2203.project.bootstrap-address" -> intToServerAddress(1));
-    StartNode(selfAddr, Init.none[ScenarioClient], conf);
+    if (!isKilled()) {
+      val conf = Map(
+        "id2203.project.address" -> selfAddr,
+        "id2203.project.bootstrap-address" -> intToServerAddress(1));
+      StartNode(selfAddr, Init.none[ScenarioClient], conf);
+    } else {
+      val conf = Map(
+        "id2203.project.address" -> selfAddr,
+        "id2203.project.bootstrap-address" -> intToServerAddress(2));
+      StartNode(selfAddr, Init.none[ScenarioClient], conf);
+    }
   };
-
-
 
   def scenario(servers: Int): JSimulationScenario = {
 
@@ -139,10 +163,11 @@ object SimpleScenarioReconfiguration {
     startCluster andThen
       100.seconds afterTermination startClients andThen
       10.seconds afterTermination stopServerOp andThen
+      10000.seconds afterTermination startClients andThen
       10000.seconds afterTermination Terminate
   }
 
-  def scenariokill(servers: Int): JSimulationScenario = {
+  /*def scenariokill(servers: Int): JSimulationScenario = {
 
     //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
     val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
@@ -152,6 +177,6 @@ object SimpleScenarioReconfiguration {
       //100.seconds afterTermination startClients andThen
       10.seconds afterTermination stopServerOp andThen
       10000.seconds afterTermination Terminate
-  }
+  }*/
 
 }

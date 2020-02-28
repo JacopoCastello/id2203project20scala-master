@@ -36,6 +36,7 @@ class ParentComponent extends ComponentDefinition {
   //******* Ports ******
   val net = requires[Network];
   val timer = requires[Timer];
+  val replica = requires[ReplicaMsg];
   //******* Children ******
   val overlay = create(classOf[VSOverlayManager], Init.NONE); // --> go to VSOverlayManager
   //val kv = create(classOf[KVService], Init.NONE);// --> go to KVService
@@ -52,6 +53,7 @@ class ParentComponent extends ComponentDefinition {
     // Overlay
     connect(Bootstrapping)(boot -> overlay);
     connect[Network](net -> overlay);
+    connect[ReplicaMsg](replica -> overlay)
     // KV
     //connect(Routing)(overlay -> kv);
     //connect[Network](net -> kv);
@@ -61,6 +63,7 @@ class ParentComponent extends ComponentDefinition {
     //connect(ReplicaMsg)(overlay -> kvParent)
     connect[Timer](timer -> kvParent)
     connect[Network](net -> kvParent)
+    connect[ReplicaMsg](replica -> kvParent)
   }
 
 }
