@@ -28,6 +28,7 @@ import se.kth.id2203.overlay.{ReplicaMsg, SetLeader}
 import se.sics.kompics.KompicsEvent
 import se.sics.kompics.network._
 import se.sics.kompics.sl._
+import se.sics.kompics.timer.{ScheduleTimeout, Timeout, Timer}
 
 import scala.collection.mutable
 
@@ -59,6 +60,10 @@ object ReconfigurationState extends Enumeration {
 }*/
 
 case class SC_Handover(cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
+//  Added for the LL
+case class Nack(n: (Int, Long)) extends KompicsEvent
+case class ReplyToNackTimeout(p: NetAddress, nL: (Int, Long), ld: Int, na: (Int, Long), timeout: ScheduleTimeout) extends Timeout(timeout)
+
 
 class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends ComponentDefinition {
 
@@ -69,6 +74,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     val ble = requires[BallotLeaderElection];
     val net = requires[Network]
     val rep = requires[ReplicaMsg]
+
+  // Leader Lease
+  val topo = requires[Topology];  //  Added for LL
+  val timer = requires[Timer];  //  Added for LL
 
   // initialize:  self, topology, c, (self, c),ri
   var (self, pi, c, rself, ri, state, rothers, others) = init match {
@@ -85,8 +94,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
   // reconfig
   var sigma = List.empty[RSM_Command];                // the final sequence from the previous configuration or () if i = 0
-  //var state = (FOLLOWER, UNKNOWN);
-  //var leader: Option[NetAddress] = None;
 
   // proposer state
   var nL= (c,0l); //var nL = 0l;
@@ -110,7 +117,50 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   // learner state
   var   ld = sigma.size
 
-    def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
+  // lease
+  val leaseDuration = cfg.getValue[Long]("id2203.project.leaseDuration")
+  val clockError = cfg.getValue[Long]("id2203.project.clock.error")
+  var tprom = 0l
+  var tl = 0l
+  var hasGivenAnyLease = false
+  var nacks = 0
+
+  //  Added for LL
+  def clockTime: Long = {
+    System.currentTimeMillis()
+  }
+  def canGiveLease(n: (Int, Long)): Boolean = {
+    if(compareGreaterEqual(nProm, n)) {
+      return false
+    }
+    if(!hasGivenAnyLease) {
+      true
+    } else {
+      (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0
+    }
+  }
+
+  def canReplyWithLocalState(c: RSM_Command): Boolean = {
+    if(c.command.opType != "READ") {
+      return false
+    }
+    if(state != ("LEADER", "ACCEPT", "RUNNING")) {
+      return false
+    }
+    (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
+  }
+
+  // todo: ask whether this is needed --> most of it is already set
+  /*topo uponEvent {
+    case PartitionTopology(nodes: Set[NetAddress]) =>  {
+      pi = nodes
+      others = pi - self
+      majority = (pi.size / 2) + 1
+    }
+  }*/
+
+  // Paxos
+  def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
       s.drop(l)
     }
 
@@ -142,7 +192,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       }
     }
 
-    // General code
+    // Reconfiuration
     def stopped(): Boolean = {
       if (!va.isEmpty) {
         if(va.last.command.opType == "STOP" && va.last.command.value == c.toString()) {
@@ -162,20 +212,27 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         var n = (c, b)
         if (self == l && compareGreater(n, nL)) {
           log.info(s"The leader is host: [$self]\n")
+          log.info(s"Clock time: "+clockTime/1000) //  Added for LL
           trigger(NetMessage(self, self,SetLeader(self)) -> net);
           nL = n
           nProm = n
           promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
+          // acks(l) = (na, suffix(va, ld)); //  In LL is a bit different
           for (r <- ri) {
             las += (r -> sigma.size);
             lds += (r -> -1);
           }
           lds(rself) = ld;
+          //lds(self) = ld; //  In LL is a bit different
           lc = sigma.size;
           state = ("LEADER", "PREPARE", "RUNNING");
+          tl = clockTime; //  Added for LL
+          nacks = 0;  //  Added for LL
           for (r <- rothers) {
             trigger(NetMessage(self, r._1, Prepare(nL, ld, na)) -> net);
           }
+
+
           // not implemented
       //  } else if (state == (state._1, RECOVER)) {
           // send (PrepareReq) to l
@@ -207,8 +264,24 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       }
     }
 
+  //LL
+  timer uponEvent {
+    case ReplyToNackTimeout(p, _nL, _ld, _na, _) =>  {
+      trigger(NetMessage(self, p, Prepare(_nL, _ld, _na)) -> net)
+    }
+  }
 
     net uponEvent {
+          // LL
+      case NetMessage(header, Nack(c,n)) => {
+        val p = header.src
+        if ((n,c) == nL && state == ("LEADER", "PREPARE", "RUNNING")) {
+          val scheduledTimeout = new ScheduleTimeout(500)
+          scheduledTimeout.setTimeoutEvent(ReplyToNackTimeout(p, nL, ld, na, scheduledTimeout))
+          trigger(scheduledTimeout -> timer)
+        }
+      }
+          //SC_Handover for Reconfiguration
       case NetMessage(sender, SC_Handover(cOld, sigmaOld)) => {
         if(sender.src == self && cOld == c-1 && sigmaOld.last.command.opType == "STOP"){
           log.info("Handover")
@@ -232,7 +305,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           lds((a.src, ri(a.src))) = lda;
 
           val P = pi.filter(x => promises.contains(x, ri(a.src)));
-          if (P.size == math.ceil((pi.size + 1) / 2).toInt) {
+          if (P.size >= math.ceil((pi.size + 1) / 2).toInt) {
             var ack = P.iterator.reduceLeft((v1, v2) => if (compareGreaterPromises(promises(v1, ri(v1)), promises(v2, ri(v2)))) v1 else v2);
             var (k, sfx) = promises((ack,c));
             va = prefix(va, ld) ++ sfx
@@ -289,8 +362,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(p, Prepare(np, ldp, nal)) => {
         log.info(s"Value of p: ${p.src}")
         log.info(s"Value of np: ${np}")
-       // if (compareGreater(nProm, np)) {
         if (compareGreater(np, nProm)) {
+          hasGivenAnyLease = true;
+          tprom = clockTime;
           nProm = np;
           state = ("FOLLOWER", "PREPARE", "RUNNING");
           var sfx = List.empty[RSM_Command];
@@ -298,6 +372,11 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             sfx = suffix(va, ldp);
           }
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
+        } else{
+          // if the only reason a promise wasn't given is the lease violation, then ask to try again later
+          if (compareGreater(np, nProm) && (clockTime - tprom) <= leaseDuration * (1000 + clockError) / 1000.0) {
+            trigger(NetMessage(self, p.src, Nack(np)) -> net);
+          }
         }
       }
       case NetMessage(p, AcceptSync(localnL, sfx, ldp)) => {
