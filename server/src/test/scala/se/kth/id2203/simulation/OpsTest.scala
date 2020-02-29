@@ -76,7 +76,7 @@ class OpsTest extends FlatSpec with Matchers {
   }
 
 
-  "Write then Read" should "read the writen value" in { // well of course eventually they should be implemented^^
+  "Write then Read" should "read the written value" in { // well of course eventually they should be implemented^^
     val seed = 123l
     JSimulationScenario.setSeed(seed)
     val simpleBootScenario = SimpleScenario.scenario(6)
