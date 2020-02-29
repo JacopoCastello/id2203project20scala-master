@@ -1,7 +1,6 @@
 package LookUpTest
 import org.scalatest.FlatSpec
-import se.kth.id2203.networking.NetAddress;
-import se.kth.id2203.networking.NetAddressConverter;
+import se.kth.id2203.networking.NetAddressConverter
 import se.kth.id2203.overlay.LookupTable;
 
 class LookUpTest extends FlatSpec {
@@ -31,11 +30,18 @@ class LookUpTest extends FlatSpec {
     assert(lut.getNodes().size == nodeset.size)
   }
 
-  it should "assign keys to a valid partition" in {
+  /*it should "assign keys to a valid partition" in {
     var testkey = "I am a key";
     var partitionForKey = lut.lookup(testkey);
     //print("Key is in partition: " + partitionForKey + " \n")
     assert(!partitionForKey.isEmpty)
+  }*/
+
+  it should "return the leader for a valid partition" in {
+    var testkey = "I am a key";
+    var leader = lut.lookup(testkey);
+    //print("Key is in partition: " + partitionForKey + " \n")
+    assert(leader != None)
   }
 
   it should "manage to lookup its group" in {

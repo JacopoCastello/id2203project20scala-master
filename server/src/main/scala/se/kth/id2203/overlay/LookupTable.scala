@@ -25,8 +25,6 @@
 package se.kth.id2203.overlay;
 
 import com.larskroll.common.collections._
-import java.util.Collection
-
 import se.kth.id2203.bootstrapping.NodeAssignment
 import se.kth.id2203.networking.NetAddress
 
@@ -48,14 +46,16 @@ Also keys might hash to other partitions if more are available -- might be too m
 class LookupTable extends NodeAssignment with Serializable {
   val nodesInPartition = 3;
   val partitions = TreeSetMultiMap.empty[Int, NetAddress]; //A Multimap is a general way to associate keys with arbitrarily many values.
-
+  var leader = mutable.Map.empty[Int, NetAddress];
 
   // our lookup
-  def lookup(key: String): Iterable[NetAddress] = {
+  //def lookup(key: String): Iterable[NetAddress] = {
+  def lookup(key: String): NetAddress = {
     val keyHash = math.abs(key.hashCode()); // not collision free
     val partitionIdx = keyHash % partitions.keySet.size // 0 or 1 or 2 if we have 3 partition --> always in N
 
-    return partitions(partitionIdx);
+    //return partitions(partitionIdx);
+    return leader(partitionIdx)
   }
 
   // get the group from a nodeaddress which it is in
@@ -78,7 +78,7 @@ class LookupTable extends NodeAssignment with Serializable {
 
 
   // add a node to a partition
-  def addNodetoGroup(node: NetAddress, partitionIdx: Int): Boolean ={
+  def addNodetoGroup(node: NetAddress, partitionIdx: Int) {
     partitions.put(partitionIdx -> node);
     true //how to return false?
   }
@@ -91,6 +91,11 @@ class LookupTable extends NodeAssignment with Serializable {
     }else{
       false
     }
+  }
+
+  def setNewLeader(node: NetAddress, partitionIdx: Int): Boolean = {
+    leader += (partitionIdx -> node)
+    true
   }
 
   override def toString(): String = {

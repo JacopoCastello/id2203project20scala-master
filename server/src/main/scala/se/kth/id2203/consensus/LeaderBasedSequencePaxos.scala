@@ -24,6 +24,7 @@
 package se.kth.id2203.consensus
 
 import se.kth.id2203.networking.{NetAddress, NetMessage}
+import se.kth.id2203.overlay.{ReplicaMsg, SetLeader}
 import se.sics.kompics.KompicsEvent
 import se.sics.kompics.network._
 import se.sics.kompics.sl._
@@ -38,7 +39,7 @@ import scala.collection.mutable
 
   case class Accept(nL: (Int,Long), c: RSM_Command) extends KompicsEvent;
 
-  case class Accepted(nL: (Int,Long), m: Int, conf: Int) extends KompicsEvent;
+  case class Accepted(nL: (Int,Long), m: Int) extends KompicsEvent;
 
   case class Decide(ld: Int, nL: (Int,Long)) extends KompicsEvent;
 
@@ -67,6 +68,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     val sc = provides[SequenceConsensus];
     val ble = requires[BallotLeaderElection];
     val net = requires[Network]
+    val rep = requires[ReplicaMsg]
 
   // initialize:  self, topology, c, (self, c),ri
   var (self, pi, c, rself, ri, state, rothers, others) = init match {
@@ -160,6 +162,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         var n = (c, b)
         if (self == l && compareGreater(n, nL)) {
           log.info(s"The leader is host: [$self]\n")
+          trigger(NetMessage(self, self,SetLeader(self)) -> net);
           nL = n
           nProm = n
           promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
@@ -270,9 +273,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
         }
       }
-      case NetMessage(a, Accepted(n, m, conf)) => {
+      case NetMessage(a, Accepted(n, m)) => {
         log.info("The received sequence has length: " + m)
-        if ((conf == c) && (n == nL) && (state == ("LEADER", "ACCEPT", "RUNNING"))) {
+        if ((n == nL) && (state == ("LEADER", "ACCEPT", "RUNNING"))) {
           las((a.src, ri(a.src))) = m;
           var x = pi.filter(x => las.getOrElse((x, rself._2), 0) >= m);
           if (m > lc && x.size >= (pi.size + 1) / 2) {
@@ -302,13 +305,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           na = localnL;
           va = prefix(va, ldp) ++ sfx;
           state = ("FOLLOWER", "ACCEPT","RUNNING");
-          trigger(NetMessage(self, p.src, Accepted(localnL, va.size, c)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
         }
       }
       case NetMessage(p, Accept(localnL, cmd)) => {
         if ((nProm == localnL) && (state == ("FOLLOWER", "ACCEPT", "RUNNING"))) {
           va = va ++ List(cmd);
-          trigger(NetMessage(self, p.src, Accepted(localnL, va.size, c)) -> net);
+          trigger(NetMessage(self, p.src, Accepted(localnL, va.size)) -> net);
         }
       }
       case NetMessage(_, Decide(l, localnL)) => {

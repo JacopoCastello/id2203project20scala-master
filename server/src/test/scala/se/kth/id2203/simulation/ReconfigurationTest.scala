@@ -41,7 +41,7 @@ import scala.reflect.io.Directory
 
 class ReconfigurationTest extends FlatSpec with Matchers {
 
-  private val nMessages = 10;
+  private val nMessages = 16;
 
   //  "Classloader" should "be something" in {
   //    val cname = classOf[SimulationResultSingleton].getCanonicalName();
@@ -74,9 +74,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
        SimulationResult.get[String](s"test$i") should be(Some("None"));
        // of course the correct response should be Success not NotImplemented, but like this the test passes
      }
-    val path = new java.io.File(".").getCanonicalPath;
-    val directory = new Directory(new File((path+"/server/src/main/scala/se/kth/id2203/kvstore/data")))
-    directory.deleteRecursively()
+    deletePersistentStorage()
   }
   "Write then Read" should "read the writen value" in { // well of course eventually they should be implemented^^
     val seed = 123l
@@ -92,9 +90,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
-    val path = new java.io.File(".").getCanonicalPath;
-    val directory = new Directory(new File((path+"/server/src/main/scala/se/kth/id2203/kvstore/data")))
-    directory.deleteRecursively()
+    deletePersistentStorage()
   }
 
   "Compare and swap" should "swap the values if they are correct" in { // well of course eventually they should be implemented^^
@@ -111,6 +107,10 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
+    deletePersistentStorage()
+  }
+
+  def deletePersistentStorage(): Unit ={
     val path = new java.io.File(".").getCanonicalPath;
     val directory = new Directory(new File((path+"/server/src/main/scala/se/kth/id2203/kvstore/data")))
     directory.deleteRecursively()

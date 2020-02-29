@@ -23,6 +23,7 @@
  */
 package se.kth.id2203.simulation
 
+import java.io.File
 import java.net.{InetAddress, UnknownHostException}
 
 import org.scalatest._
@@ -36,6 +37,7 @@ import se.sics.kompics.sl._
 import se.sics.kompics.sl.simulator._
 
 import scala.concurrent.duration._
+import scala.reflect.io.Directory
 
 class OpsTest extends FlatSpec with Matchers {
 
@@ -70,6 +72,7 @@ class OpsTest extends FlatSpec with Matchers {
       SimulationResult.get[String](s"test$i") should be(Some("None"));
       // of course the correct response should be Success not NotImplemented, but like this the test passes
     }
+    deletePersistentStorage()
   }
 
 
@@ -87,6 +90,7 @@ class OpsTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
+    deletePersistentStorage()
   }
   "Compare and swap" should "swap the values if they are correct" in { // well of course eventually they should be implemented^^
     val seed = 123l
@@ -102,6 +106,12 @@ class OpsTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
+    deletePersistentStorage()
+  }
+  def deletePersistentStorage(): Unit ={
+    val path = new java.io.File(".").getCanonicalPath;
+    val directory = new Directory(new File((path+"/server/src/main/scala/se/kth/id2203/kvstore/data")))
+    directory.deleteRecursively()
   }
 }
 

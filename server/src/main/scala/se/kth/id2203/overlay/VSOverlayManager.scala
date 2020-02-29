@@ -30,8 +30,6 @@ import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
 import se.sics.kompics.timer.Timer
 
-import scala.util.Random
-
 /**
   * The V(ery)S(imple)OverlayManager.
   * <p>
@@ -75,14 +73,15 @@ class VSOverlayManager extends ComponentDefinition {
 
   net uponEvent {
     case NetMessage(header, RouteMsg(key, msg)) => {
-      val nodes = lut.get.lookup(key);
-      assert(!nodes.isEmpty, "nodes partition is empty");
-      nodes.foreach(node => {
+      //val nodes = lut.get.lookup(key);
+      val leader = lut.get.lookup(key);
+      //assert(!nodes.isEmpty, "nodes partition is empty");
+     // nodes.foreach(node => {
       //  if(!suspected_nodes.contains(node)) { // only sent to alive nodes
-          trigger(NetMessage(header.src, node, msg) -> net);
-          log.info(s"Forwarding message for key $key to $node");
+          trigger(NetMessage(header.src, leader, msg) -> net);
+          log.info(s"Forwarding message for key $key to $leader");
       //  }
-      })
+     // })
     }
     case NetMessage(header, msg: Connect) => {
       lut match {
@@ -129,16 +128,26 @@ class VSOverlayManager extends ComponentDefinition {
       log.info("Got NodeAssignment, overlay ready.");
       lut = Some(assignment)
     }
+
+    case NetMessage(sender, SetLeader(leader)) => {
+      log.info("Setting new leader in lookup table.");
+      val groupidx = lut.get.getKeyforNode(sender.src)
+      lut.get.setNewLeader(leader, groupidx)
+    }
   }
 
   route uponEvent {
     case RouteMsg(key, msg) => {
-      val nodes = lut.get.lookup(key);
-      assert(!nodes.isEmpty);
-      val i = Random.nextInt(nodes.size);
-      val target = nodes.drop(i).head;
-      log.info(s"Routing message for key $key to $target");
-      trigger(NetMessage(self, target, msg) -> net);
+      //val nodes = lut.get.lookup(key);
+      //assert(!nodes.isEmpty);
+     // val i = Random.nextInt(nodes.size);
+      //val target = nodes.drop(i).head;
+      //log.info(s"Routing message for key $key to $target");
+      //trigger(NetMessage(self, target, msg) -> net);
+      val leader = lut.get.lookup(key);
+      log.info(s"Routing message for key $key to leader $leader");
+      trigger(NetMessage(self, leader, msg) -> net);
+
     }
   }
 
