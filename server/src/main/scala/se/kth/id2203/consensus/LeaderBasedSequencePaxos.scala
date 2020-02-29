@@ -76,7 +76,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     val rep = requires[ReplicaMsg]
 
   // Leader Lease
-  val topo = requires[Topology];  //  Added for LL
+  //val topo = requires[Topology];  //  Added for LL
   val timer = requires[Timer];  //  Added for LL
 
   // initialize:  self, topology, c, (self, c),ri
@@ -273,9 +273,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
     net uponEvent {
           // LL
-      case NetMessage(header, Nack(c,n)) => {
+      case NetMessage(header, Nack(n)) => {
         val p = header.src
-        if ((n,c) == nL && state == ("LEADER", "PREPARE", "RUNNING")) {
+        if (n == nL && state == ("LEADER", "PREPARE", "RUNNING")) {
           val scheduledTimeout = new ScheduleTimeout(500)
           scheduledTimeout.setTimeoutEvent(ReplyToNackTimeout(p, nL, ld, na, scheduledTimeout))
           trigger(scheduledTimeout -> timer)
