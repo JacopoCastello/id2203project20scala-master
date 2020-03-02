@@ -41,7 +41,7 @@ import scala.reflect.io.Directory
 
 class OpsTest extends FlatSpec with Matchers {
 
-  private val nMessages = 10000;
+  private val nMessages = 10;
 
   //  "Classloader" should "be something" in {
   //    val cname = classOf[SimulationResultSingleton].getCanonicalName();
