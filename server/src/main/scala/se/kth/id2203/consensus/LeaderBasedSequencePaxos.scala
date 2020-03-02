@@ -118,6 +118,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   var   ld = sigma.size
 
   // lease
+  //cfg.readValue[NetAddress]("id2203.project.bootstrap-address")
   val leaseDuration = cfg.getValue[Long]("id2203.project.leaseDuration")
   val clockError = cfg.getValue[Long]("id2203.project.clock.error")
   var tprom = 0l
@@ -147,7 +148,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     if(state != ("LEADER", "ACCEPT", "RUNNING")) {
       return false
     }
-    (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
+    println( (clockTime - tl) )
+    println( leaseDuration*(1000 - clockError)/100.0)
+    (clockTime - tl) < leaseDuration*(1000 - clockError)/100.0
   }
 
   // todo: ask whether this is needed --> most of it is already set

@@ -38,3 +38,4 @@ nb-configuration.xml
 .bloop/
 .metals/
 *.code-workspace
+/server/src/main/scala/se/kth/id2203/kvstore/data/
