@@ -41,7 +41,7 @@ import scala.reflect.io.Directory
 
 class OpsTest extends FlatSpec with Matchers {
 
-  private val nMessages = 10;
+  private val nMessages = 10000;
 
   //  "Classloader" should "be something" in {
   //    val cname = classOf[SimulationResultSingleton].getCanonicalName();
@@ -77,6 +77,11 @@ class OpsTest extends FlatSpec with Matchers {
 
 
   "Write then Read" should "read the written value" in { // well of course eventually they should be implemented^^
+    def clockTime: Long = {
+      System.currentTimeMillis()
+    }
+    var starttime = clockTime
+    println("start time:" + starttime)
     val seed = 123l
     JSimulationScenario.setSeed(seed)
     val simpleBootScenario = SimpleScenario.scenario(6)
@@ -90,6 +95,9 @@ class OpsTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
+    var endtime = clockTime
+    println("end time:" + endtime)
+    println("time difference: "+ (endtime-starttime))
     deletePersistentStorage()
   }
   "Compare and swap" should "swap the values if they are correct" in { // well of course eventually they should be implemented^^
