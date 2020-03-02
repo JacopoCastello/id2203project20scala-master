@@ -141,7 +141,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   }
 
   def canReplyWithLocalState(c: RSM_Command): Boolean = {
-    if(c.command.opType != "READ") {
+    if(c.command.opType != "GET") {
       return false
     }
     if(state != ("LEADER", "ACCEPT", "RUNNING")) {
@@ -251,14 +251,18 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case SC_Propose(scp) => {
         log.info(s"The command {} was proposed!", scp.command.opType)
         log.info(s"The current state of the node is {}", state)
-        if (state == ("LEADER", "PREPARE", "RUNNING")) {
-          propCmds = propCmds ++ List(scp);
-        }
-        else if (state == ("LEADER", "ACCEPT", "RUNNING") && !stopped()) {
-          va = va ++ List(scp);
-          las(rself) = va.size;
-          for (r <- rothers.filter(x => lds.get(x) != -1)) {
-            trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
+        if(canReplyWithLocalState(scp)){
+          trigger(SC_Decide(scp) -> sc)
+        } else {
+          if (state == ("LEADER", "PREPARE", "RUNNING")) {
+            propCmds = propCmds ++ List(scp);
+          }
+          else if (state == ("LEADER", "ACCEPT", "RUNNING") && !stopped()) {
+            va = va ++ List(scp);
+            las(rself) = va.size;
+            for (r <- rothers.filter(x => lds.get(x) != -1)) {
+              trigger(NetMessage(self, r._1, Accept(nL, scp)) -> net);
+            }
           }
         }
       }
