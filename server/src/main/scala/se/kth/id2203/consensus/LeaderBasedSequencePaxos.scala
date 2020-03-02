@@ -149,18 +149,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       return false
     }
     println( (clockTime - tl) )
-    println( leaseDuration*(1000 - clockError)/100.0)
-    (clockTime - tl) < leaseDuration*(1000 - clockError)/100.0
+    println( leaseDuration*(1000 - clockError)/1000.0)
+    (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
   }
-
-  // todo: ask whether this is needed --> most of it is already set
-  /*topo uponEvent {
-    case PartitionTopology(nodes: Set[NetAddress]) =>  {
-      pi = nodes
-      others = pi - self
-      majority = (pi.size / 2) + 1
-    }
-  }*/
+  
 
   // Paxos
   def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
