@@ -42,7 +42,7 @@ class KVParent extends ComponentDefinition {
       val kv = create(classOf[KVService], Init[KVService](c))
       val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c), ri,  ("FOLLOWER", "UNKNOWN", "RUNNING")))
       //val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology ))
-      val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
+      val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology, c))
       val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology, c))
 
 
@@ -84,7 +84,7 @@ class KVParent extends ComponentDefinition {
      // for (node <- group) {
         val kv = create(classOf[KVService],Init[KVService](c)) // pass value at handover?
         val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c), ri, ("FOLLOWER", "UNKNOWN", "WAITING")))
-        val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
+        val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group, c))
         val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group, c))
 
         // todo: when should they be started?

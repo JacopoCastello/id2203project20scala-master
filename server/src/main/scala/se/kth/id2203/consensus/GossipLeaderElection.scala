@@ -37,24 +37,20 @@ case class HeartbeatReq(round: Long, highestBallot: Long) extends KompicsEvent;
 
 case class HeartbeatResp(round: Long, ballot: Long) extends KompicsEvent;
 
-
-
-
-
 class GossipLeaderElection(init: Init[GossipLeaderElection]) extends ComponentDefinition {
 
   val ble = provides[BallotLeaderElection];
   val timer = requires[Timer];
   val net = requires[Network]
 
-  val (self, topology) = init match {
-    case Init(self: NetAddress, topology: Set[NetAddress]) => (self, topology)
+  val (self, topology, configN) = init match {
+    case Init(self: NetAddress, topology: Set[NetAddress], configN: Int) => (self, topology, configN)
   }
 
   val delta = 10;
   val majority = (topology.size / 2) + 1;
 
-  private var period = 1500;
+  private var period = 100;
   private val ballots = mutable.Map.empty[NetAddress, Long];
 
   private var round = 0l;
@@ -100,7 +96,7 @@ class GossipLeaderElection(init: Init[GossipLeaderElection]) extends ComponentDe
       if (leader.isEmpty || (topBallot, topProcess) != leader.get){
         highestBallot = topBallot;
         leader = Some(top);
-        trigger(BLE_Leader(topProcess, topBallot) -> ble);
+        trigger(BLE_Leader(topProcess, topBallot, configN) -> ble);
       }
     }
   }

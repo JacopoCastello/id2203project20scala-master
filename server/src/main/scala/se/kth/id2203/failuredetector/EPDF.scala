@@ -24,12 +24,10 @@
 package se.kth.id2203.failuredetector
 
 import se.kth.id2203.networking.{NetAddress, NetMessage}
-import se.sics.kompics.timer.{ScheduleTimeout, Timeout}
-import se.sics.kompics.{KompicsEvent, ComponentDefinition => _, Port => _}
-import se.sics.kompics.Start
 import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
-import se.sics.kompics.timer.Timer
+import se.sics.kompics.timer.{ScheduleTimeout, Timeout, Timer}
+import se.sics.kompics.{KompicsEvent, Start, ComponentDefinition => _, Port => _}
 
 //Custom messages to be used in the internal component implementation
 case class CheckTimeout(timeout: ScheduleTimeout) extends Timeout(timeout);
@@ -91,6 +89,7 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
           log.info("Suspecting " + p)
           //trigger(Suspect(p) -> epfd); FOR TESTING VIA NET
           trigger(NetMessage(self, self, Suspect(p)) -> net);
+
           suicide()
         } else if (alive.contains(p) && suspected.contains(p)) {
           suspected = suspected - p;

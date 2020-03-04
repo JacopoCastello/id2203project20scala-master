@@ -24,7 +24,7 @@
 package se.kth.id2203.consensus
 
 import se.kth.id2203.networking.{NetAddress, NetMessage}
-import se.kth.id2203.overlay.{ReplicaMsg, SetLeader}
+import se.kth.id2203.overlay.{Handover, ReplicaMsg}
 import se.sics.kompics.KompicsEvent
 import se.sics.kompics.network._
 import se.sics.kompics.sl._
@@ -58,7 +58,7 @@ object ReconfigurationState extends Enumeration {
   val WAITING, RUNNING, HELPING = Value;
 }*/
 
-case class SC_Handover(cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
+
 
 class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends ComponentDefinition {
 
@@ -156,33 +156,34 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
 
 
     ble uponEvent {
-      case BLE_Leader(l, b) => {
-        log.info(s"Proposing leader: $l [$self] \n")
-        println(nL)
-        var n = (c, b)
-        if (self == l && compareGreater(n, nL)) {
-          log.info(s"The leader is host: [$self]\n")
-          trigger(NetMessage(self, self,SetLeader(self)) -> net);
-          nL = n
-          nProm = n
-          promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
-          for (r <- ri) {
-            las += (r -> sigma.size);
-            lds += (r -> -1);
+      case BLE_Leader(l, b, config) => {
+        if (config == c) {
+          log.info(s"Proposing leader: $l [$self] \n")
+          println(nL)
+          var n = (c, b)
+          if (self == l && compareGreater(n, nL)) {
+            log.info(s"The leader is host: [$self]\n")
+            trigger(NetMessage(self, self, SetLeader(self)) -> net);
+            nL = n
+            nProm = n
+            promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
+            for (r <- ri) {
+              las += (r -> sigma.size);
+              lds += (r -> -1);
+            }
+            lds(rself) = ld;
+            lc = sigma.size;
+            state = ("LEADER", "PREPARE", "RUNNING");
+            for (r <- rothers) {
+              trigger(NetMessage(self, r._1, Prepare(nL, ld, na)) -> net);
+            }
+            // not implemented
+            //  } else if (state == (state._1, RECOVER)) {
+            // send (PrepareReq) to l
+          } else {
+            state = ("FOLLOWER", state._2, "RUNNING");
           }
-          lds(rself) = ld;
-          lc = sigma.size;
-          state = ("LEADER", "PREPARE", "RUNNING");
-          for (r <- rothers) {
-            trigger(NetMessage(self, r._1, Prepare(nL, ld, na)) -> net);
-          }
-          // not implemented
-      //  } else if (state == (state._1, RECOVER)) {
-          // send (PrepareReq) to l
-        } else {
-          state = ("FOLLOWER", state._2, "RUNNING");
         }
-
       }
     }
     // not implemented:
@@ -319,7 +320,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           while (ld < l) {
             if (va(ld).command.opType == "STOP" && va(ld).command.value == c.toString){
               state = (state._1, state._2, "HELPING");
-              trigger(NetMessage(self, self, SC_Handover(c, va)) -> net)
+              if (state == ("LEADER", "ACCEPT","HELPING")){
+
+                trigger(NetMessage(self, self, Handover(c, va)) -> net)
+              }
               suicide()
               // KIll the components - triger kill on component
             }

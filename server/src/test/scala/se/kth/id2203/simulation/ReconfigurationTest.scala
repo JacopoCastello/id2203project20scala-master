@@ -96,7 +96,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
   "Compare and swap" should "swap the values if they are correct" in { // well of course eventually they should be implemented^^
     val seed = 123l
     JSimulationScenario.setSeed(seed)
-    val simpleBootScenario = SimpleScenario.scenario(6)
+    val simpleBootScenario = SimpleScenario.scenario(8)
     val res = SimulationResultSingleton.getInstance()
 
     SimulationResult += ("operations" -> "CAS")
