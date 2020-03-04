@@ -152,7 +152,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     println( leaseDuration*(1000 - clockError)/1000.0)
     (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
   }
-  
+
 
   // Paxos
   def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {

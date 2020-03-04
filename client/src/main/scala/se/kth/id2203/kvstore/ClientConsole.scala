@@ -115,4 +115,4 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
   };
 
 }
-// todo: opertions implementation in here
+

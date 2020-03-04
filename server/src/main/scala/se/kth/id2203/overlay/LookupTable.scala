@@ -109,11 +109,11 @@ class LookupTable extends NodeAssignment with Serializable {
 
 object LookupTable {
   // initial generate function
-  def generate(nodes: Set[NetAddress]): LookupTable = {
+  /*def generate(nodes: Set[NetAddress]): LookupTable = {
     val lut = new LookupTable();
     lut.partitions ++= (0 -> nodes);
     lut
-  }
+  }*/
 
   // our generate function
   def generate(nodes: Set[NetAddress], rDegree: Int ): LookupTable = { // nodes contain the set of nodeaddresses that are available, rDegree: replication Degree of our system
@@ -121,6 +121,7 @@ object LookupTable {
     var availablePartitions = math.floor(nodes.size / rDegree).toInt; // how many partitions of at least #repldegree nodes can be filled
     ///var sortedAddr = nodes.toSeq.sorted; // might not be necessary
     var idxIterator = 0;
+    var round = 0;
 
     for(node <- nodes){ // distribute the nodes into availablePartitions
       lut.partitions.put(idxIterator -> node);
@@ -128,6 +129,10 @@ object LookupTable {
       if (idxIterator == availablePartitions){
         idxIterator = 0;
       }
+      if (round == 0){
+        lut.leader += (idxIterator -> node)
+      }
+      round += 1
     }
     lut
   }

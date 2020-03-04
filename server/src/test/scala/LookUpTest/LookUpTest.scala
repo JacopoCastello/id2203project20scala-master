@@ -39,6 +39,7 @@ class LookUpTest extends FlatSpec {
 
   it should "return the leader for a valid partition" in {
     var testkey = "I am a key";
+    print(lut)
     var leader = lut.lookup(testkey);
     //print("Key is in partition: " + partitionForKey + " \n")
     assert(leader != None)
