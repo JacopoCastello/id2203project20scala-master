@@ -157,6 +157,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           if (self == l && nL > nProm){
             println(clockTime/1000) //  Added for LL
             log.info(s"The leader is host: [$self]\n")
+            trigger(NetMessage(self, self,SetLeader(self)) -> net);
             state = (LEADER, PREPARE);
             propCmds = List.empty[RSM_Command];
             las.clear();
