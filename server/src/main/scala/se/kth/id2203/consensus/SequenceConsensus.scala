@@ -34,9 +34,12 @@ trait RSM_Command{
 
 case class SC_Propose(value: RSM_Command) extends KompicsEvent;
 case class SC_Decide(value: RSM_Command) extends KompicsEvent;
-//case class SC_Handover(src: NetAddress,configuration:Int, previous_finalsequence:List[RSM_Command]) extends KompicsEvent;
+case class SC_Handover(cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
+case class SetLeader(sender:NetAddress) extends KompicsEvent;
 
 class SequenceConsensus extends Port {
   request[SC_Propose];
   indication[SC_Decide];
+  request[SC_Handover]
+  indication[SetLeader];
 }

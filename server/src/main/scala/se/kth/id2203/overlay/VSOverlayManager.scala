@@ -24,6 +24,7 @@
 package se.kth.id2203.overlay;
 
 import se.kth.id2203.bootstrapping._
+import se.kth.id2203.consensus.{RSM_Command, SC_Handover, SetLeader}
 import se.kth.id2203.failuredetector.{EventuallyPerfectFailureDetector, Restore, Suspect}
 import se.kth.id2203.networking._
 import se.sics.kompics.network.Network
@@ -133,6 +134,14 @@ class VSOverlayManager extends ComponentDefinition {
       log.info("Setting new leader in lookup table.");
       val groupidx = lut.get.getKeyforNode(sender.src)
       lut.get.setNewLeader(leader, groupidx)
+    }
+
+    case NetMessage(sender, Handover(cOld: Int, sigmaOld:List[RSM_Command])) => {
+      log.info("Sending handover to followers");
+      val newgroup = lut.get.getNodesforGroup(sender.src)
+      for(node <- newgroup) {
+        trigger(NetMessage(self, node, SC_Handover(cOld, sigmaOld)) -> net)
+      }
     }
   }
 

@@ -24,7 +24,7 @@
 package se.kth.id2203.consensus
 
 import se.kth.id2203.networking.{NetAddress, NetMessage}
-import se.kth.id2203.overlay.{ReplicaMsg, SetLeader}
+import se.kth.id2203.overlay.{Handover, ReplicaMsg}
 import se.sics.kompics.KompicsEvent
 import se.sics.kompics.network._
 import se.sics.kompics.sl._
@@ -59,7 +59,6 @@ object ReconfigurationState extends Enumeration {
   val WAITING, RUNNING, HELPING = Value;
 }*/
 
-case class SC_Handover(cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
 //  Added for the LL
 case class Nack(n: (Int, Long)) extends KompicsEvent
 case class ReplyToNackTimeout(p: NetAddress, nL: (Int, Long), ld: Int, na: (Int, Long), timeout: ScheduleTimeout) extends Timeout(timeout)
@@ -282,7 +281,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       }
           //SC_Handover for Reconfiguration
       case NetMessage(sender, SC_Handover(cOld, sigmaOld)) => {
-        if(sender.src == self && cOld == c-1 && sigmaOld.last.command.opType == "STOP"){
+        if(cOld == c-1 && sigmaOld.last.command.opType == "STOP"){
           log.info("Handover")
             sigma = sigmaOld
             las.clear()
@@ -397,7 +396,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           while (ld < l) {
             if (va(ld).command.opType == "STOP" && va(ld).command.value == c.toString){
               state = (state._1, state._2, "HELPING");
-              trigger(NetMessage(self, self, SC_Handover(c, va)) -> net)
+              if (state == ("LEADER", "ACCEPT","HELPING")){
+
+                trigger(NetMessage(self, self, Handover(c, va)) -> net)
+              }
               suicide()
               // KIll the components - triger kill on component
             }

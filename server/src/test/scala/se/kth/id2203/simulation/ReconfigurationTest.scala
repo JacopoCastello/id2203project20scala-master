@@ -41,7 +41,7 @@ import scala.reflect.io.Directory
 
 class ReconfigurationTest extends FlatSpec with Matchers {
 
-  private val nMessages = 16;
+  private val nMessages = 10;
 
   //  "Classloader" should "be something" in {
   //    val cname = classOf[SimulationResultSingleton].getCanonicalName();
@@ -63,7 +63,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
   "Simple Operations" should "return None" in { // well of course eventually they should be implemented^^
     val seed = 123l;
     JSimulationScenario.setSeed(seed);
-    val simpleBootScenario = SimpleScenarioReconfiguration.scenario(3);
+    val simpleBootScenario = SimpleScenarioReconfiguration.scenario(8);
     val res = SimulationResultSingleton.getInstance();
     SimulationResult += ("operations" -> "SimpleOperation")
     SimulationResult += ("nMessages" -> nMessages);
@@ -79,7 +79,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
   "Write then Read" should "read the writen value" in { // well of course eventually they should be implemented^^
     val seed = 123l
     JSimulationScenario.setSeed(seed)
-    val simpleBootScenario = SimpleScenarioReconfiguration.scenario(4)
+    val simpleBootScenario = SimpleScenarioReconfiguration.scenario(8)
     val res = SimulationResultSingleton.getInstance()
 
     SimulationResult += ("operations" -> "Write")
@@ -96,7 +96,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
   "Compare and swap" should "swap the values if they are correct" in { // well of course eventually they should be implemented^^
     val seed = 123l
     JSimulationScenario.setSeed(seed)
-    val simpleBootScenario = SimpleScenario.scenario(6)
+    val simpleBootScenario = SimpleScenario.scenario(8)
     val res = SimulationResultSingleton.getInstance()
 
     SimulationResult += ("operations" -> "CAS")
@@ -105,7 +105,11 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     simpleBootScenario.simulate(classOf[LauncherComp])
 
     for (i <- 0 to nMessages) {
-      SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+      if (i < nMessages/2) {
+        SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+      } else {
+        SimulationResult.get[String](s"test$i") should be(Some("1"))
+      }
     }
     deletePersistentStorage()
   }
