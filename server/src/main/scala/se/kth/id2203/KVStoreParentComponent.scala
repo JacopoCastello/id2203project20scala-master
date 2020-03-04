@@ -72,8 +72,7 @@ class KVParent extends ComponentDefinition {
   }
   net uponEvent {
     case NetMessage(source, BootNewReplica(sender: NetAddress, group: Set[NetAddress], lut: LookupTable)) => {
-      //todo: find out how to send it via replica
-    //  if (source.src == self) {
+
         log.info("Boot new replica for node" + self + " in configuration " + c + " in group " + group)
 
         c += 1 // move to next config
@@ -81,13 +80,12 @@ class KVParent extends ComponentDefinition {
         for (node <- group) {
           ri += (node -> c)
         }
-     // for (node <- group) {
+
         val kv = create(classOf[KVService],Init[KVService](c)) // pass value at handover?
         val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, group, c, (self, c), ri, ("FOLLOWER", "UNKNOWN", "WAITING")))
         val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, group))
         val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, group, c))
 
-        // todo: when should they be started?
         trigger(new Start() -> kv.control())
         trigger(new Start() -> consensus.control())
         trigger(new Start() -> gossipLeaderElection.control())
@@ -116,8 +114,5 @@ class KVParent extends ComponentDefinition {
           trigger(NetMessage(self, self, new Op("STOP", "", (c-1).toString, "")) -> net);
         }
       }
-    //}
-
-  //}
 
 }

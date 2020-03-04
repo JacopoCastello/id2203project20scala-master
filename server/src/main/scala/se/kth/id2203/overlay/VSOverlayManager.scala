@@ -50,8 +50,6 @@ class VSOverlayManager extends ComponentDefinition {
   val net: PositivePort[Network] = requires[Network]
   val timer = requires[Timer];
   val epfd = requires[EventuallyPerfectFailureDetector];
-
-  //// Reconfiguration todo: define a port for starting new replicas or a component for replicas
   val replica =  requires[ReplicaMsg];
 
   //******* Fields ******
