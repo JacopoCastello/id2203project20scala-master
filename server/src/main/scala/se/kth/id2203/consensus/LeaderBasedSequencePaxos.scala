@@ -211,13 +211,11 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           nL = n
           nProm = n
           promises = scala.collection.mutable.Map(rself -> (na, suffix(va, ld)))
-          // acks(l) = (na, suffix(va, ld)); //  In LL is a bit different
           for (r <- ri) {
             las += (r -> sigma.size);
             lds += (r -> -1);
           }
           lds(rself) = ld;
-          //lds(self) = ld; //  In LL is a bit different
           lc = sigma.size;
           state = ("LEADER", "PREPARE", "RUNNING");
           tl = clockTime; //  Added for LL
