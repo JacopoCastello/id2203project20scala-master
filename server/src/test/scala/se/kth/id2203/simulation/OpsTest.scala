@@ -96,7 +96,11 @@ class OpsTest extends FlatSpec with Matchers {
     simpleBootScenario.simulate(classOf[LauncherComp])
 
     for (i <- 0 to nMessages) {
-      SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+      if (i < nMessages/2) {
+        SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+      } else {
+        SimulationResult.get[String](s"test$i") should be(Some("1"))
+      }
     }
     deletePersistentStorage()
   }
