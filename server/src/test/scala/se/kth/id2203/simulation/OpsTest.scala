@@ -39,7 +39,7 @@ import scala.concurrent.duration._
 
 class OpsTest extends FlatSpec with Matchers {
 
-  private val nMessages = 10;
+  private val nMessages = 20000;
 
   //  "Classloader" should "be something" in {
   //    val cname = classOf[SimulationResultSingleton].getCanonicalName();
@@ -57,7 +57,7 @@ class OpsTest extends FlatSpec with Matchers {
   //      i -= 1;
   //    }
   //  }
-
+  /**
   "Simple Operations" should "return None" in { // well of course eventually they should be implemented^^
     val seed = 123l;
     JSimulationScenario.setSeed(seed);
@@ -71,9 +71,14 @@ class OpsTest extends FlatSpec with Matchers {
       // of course the correct response should be Success not NotImplemented, but like this the test passes
     }
   }
-
+  */
 
   "Write then Read" should "read the writen value" in { // well of course eventually they should be implemented^^
+    def clockTime: Long = {
+      System.currentTimeMillis()
+    }
+    var starttime = clockTime
+    println("start time:" + starttime)
     val seed = 123l
     JSimulationScenario.setSeed(seed)
     val simpleBootScenario = SimpleScenario.scenario(6)
@@ -87,7 +92,11 @@ class OpsTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
+    var endtime = clockTime
+    println("end time:" + endtime)
+    println("time difference: "+ (endtime-starttime))
   }
+  /**
   "Compare and swap" should "swap the values if they are correct" in { // well of course eventually they should be implemented^^
     val seed = 123l
     JSimulationScenario.setSeed(seed)
@@ -103,6 +112,7 @@ class OpsTest extends FlatSpec with Matchers {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
   }
+   */
 }
 
 object SimpleScenario {

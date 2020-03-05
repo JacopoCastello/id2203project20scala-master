@@ -24,9 +24,12 @@
 package se.kth.id2203.consensus
 import se.sics.kompics.sl._
 import se.sics.kompics.KompicsEvent
+import se.kth.id2203.kvstore.Operation
+import se.kth.id2203.networking.NetAddress
 
   trait RSM_Command {
-    def isRead: Boolean
+    def source: NetAddress
+    def command: Operation
   }
 
   case class SC_Propose(value: RSM_Command) extends KompicsEvent;

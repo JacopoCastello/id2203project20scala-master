@@ -115,18 +115,18 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     if(!hasGivenAnyLease) {
       true
     } else {
-      (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0
+      (clockTime - tprom) > leaseDuration*((1000 + clockError)/1000.0)
     }
   }
 
   def canReplyWithLocalState(c: RSM_Command): Boolean = {
-    if(!c.isRead) {
+    if(c.command.opType != "GET") {
       return false
     }
     if(state != (LEADER, ACCEPT)) {
       return false
     }
-    (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
+    (clockTime - tl) < leaseDuration*((1000 - clockError)/1000.0)
   }
 
   topo uponEvent {
@@ -193,10 +193,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
 
         } else {
+          trigger(NetMessage(self, p.src, Nack(np)) -> net);
           // if the only reason a promise wasn't given is the lease violation, then ask to try again later
-          if (np > nProm && (clockTime - tprom) <= leaseDuration * (1000 + clockError) / 1000.0) {
+          /**
+          if (np > nProm && (clockTime - tprom) <= leaseDuration * ((1000 + clockError) / 1000.0)) {
             trigger(NetMessage(self, p.src, Nack(np)) -> net);
           }
+           */
         }
       }
       case NetMessage(a, Promise(n, na, sfxa, lda)) => {
