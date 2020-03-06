@@ -129,7 +129,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   def clockTime: Long = {
     System.currentTimeMillis()
   }
-  def canGiveLease(n: (Int, Long), nProm: (Int, Long)): Boolean = {
+  /*def canGiveLease(n: (Int, Long), nProm: (Int, Long)): Boolean = {
     if(!compareGreater(n, nProm)) {
       return false
     }
@@ -138,7 +138,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
     } else {
       (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0
     }
-  }
+  }*/
 
   def canReplyWithLocalState(c: RSM_Command): Boolean = {
     if(c.command.opType != "GET") {
@@ -358,8 +358,9 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(p, Prepare(np, ldp, nal)) => {
         log.info(s"Value of p: ${p.src}")
         log.info(s"Value of np: ${np}")
-       // if (compareGreater(np, nProm)) {
-        if (canGiveLease(np, nProm)) {
+       if (compareGreater(np, nProm)&&  (!hasGivenAnyLease || (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0 )) {
+
+       // if (canGiveLease(np, nProm)) {
           hasGivenAnyLease = true;
           tprom = clockTime;
           nProm = np;
