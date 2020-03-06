@@ -41,7 +41,7 @@ import scala.reflect.io.Directory
 
 class OpsTest extends FlatSpec with Matchers {
 
-  private val nMessages = 10000;
+  private val nMessages = 10;
 
 
   "Simple Operations" should "return None" in { // well of course eventually they should be implemented^^

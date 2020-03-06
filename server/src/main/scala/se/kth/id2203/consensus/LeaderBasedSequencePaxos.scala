@@ -129,8 +129,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   def clockTime: Long = {
     System.currentTimeMillis()
   }
-  def canGiveLease(n: (Int, Long)): Boolean = {
-    if(compareGreaterEqual(nProm, n)) {
+  def canGiveLease(n: (Int, Long), nProm: (Int, Long)): Boolean = {
+    if(!compareGreater(n, nProm)) {
       return false
     }
     if(!hasGivenAnyLease) {
@@ -358,7 +358,8 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(p, Prepare(np, ldp, nal)) => {
         log.info(s"Value of p: ${p.src}")
         log.info(s"Value of np: ${np}")
-        if (compareGreater(np, nProm)) {
+       // if (compareGreater(np, nProm)) {
+        if (canGiveLease(np, nProm)) {
           hasGivenAnyLease = true;
           tprom = clockTime;
           nProm = np;
