@@ -6,6 +6,7 @@ import se.kth.id2203.overlay.LookupTable;
 class LookUpTest extends FlatSpec {
 
   var rDegree = 3; // 3 nodes as a minimum for each group
+  //var rDegree = cfg.getValue[Int] = "id2203.project.groupsize"
 
   // some mock node addresses
   var adr1 = NetAddressConverter.convert("127.0.0.1:12345");

@@ -77,7 +77,7 @@ class OpsTest extends FlatSpec with Matchers {
     simpleBootScenario.simulate(classOf[LauncherComp])
 
     for (i <- 0 to nMessages) {
-      SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+      SimulationResult.get[String](s"test$i") should be(Some((s"$i" )))
     }
     var endtime = clockTime
     println("end time:" + endtime)

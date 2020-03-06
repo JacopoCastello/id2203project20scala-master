@@ -60,7 +60,8 @@ class VSOverlayManager extends ComponentDefinition {
   boot uponEvent {
     case GetInitialAssignments(nodes) => {
       log.info("Generating LookupTable...");
-      var lut = LookupTable.generate(nodes, 3);
+      val groupsize = cfg.getValue[Int]("id2203.project.groupsize");
+      var lut = LookupTable.generate(nodes, groupsize );
       logger.debug("Generated assignments:\n$lut");
       trigger(new InitialAssignments(lut) -> boot);
     }
@@ -116,7 +117,6 @@ class VSOverlayManager extends ComponentDefinition {
       if(suspected_nodes.contains(p)){
         log.debug("Restore " + p + "add back to lut")
         suspected_nodes -= p
-        // todo: also restore it in new config
         lut.get.addNodetoGroup(p,groupidx)
 
       }
