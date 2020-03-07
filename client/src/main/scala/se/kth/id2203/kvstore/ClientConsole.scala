@@ -56,7 +56,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
     var operationType = input(1).toUpperCase()
     var size = input.length
     
-   if(size < 3){ //Not sure it is necessary, probably the parser already handle it
+   if(size < 3){ 
    println("Too few input fields provided");
    }
    else{
@@ -65,7 +65,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
      
      if(size == 3 && operationType == "GET"){
        
-       val fr = service.op(Op(operationType, keyV, " ", " ")); // call ClientService op(key)
+       val fr = service.op(Op(operationType, keyV, " ", " "));
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);
@@ -82,7 +82,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
      
      var valuePut = input(3)
      
-     val fr = service.op(Op(operationType, keyV, valuePut, " ")); // call ClientService op(key)
+     val fr = service.op(Op(operationType, keyV, valuePut, " ")); 
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);
@@ -98,7 +98,7 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
      var valueCas = input(4)
      var expectedCas = input(3)
      
-     val fr = service.op(Op(operationType, keyV, valueCas, expectedCas)); // call ClientService op(key)
+     val fr = service.op(Op(operationType, keyV, valueCas, expectedCas)); 
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);
