@@ -41,9 +41,9 @@ import scala.reflect.io.Directory
 
 class ReconfigurationTest extends FlatSpec with Matchers {
 
-  private val nMessages = 10;
+  private val nMessages = 10000;
 
-
+/**
   "Simple Operations" should "return None" in { // well of course eventually they should be implemented^^
     val seed = 123l;
     JSimulationScenario.setSeed(seed);
@@ -60,7 +60,13 @@ class ReconfigurationTest extends FlatSpec with Matchers {
      }
     deletePersistentStorage()
   }
+
   "Write then Read" should "read the writen value" in { // well of course eventually they should be implemented^^
+    def clockTime: Long = {
+      System.currentTimeMillis()
+    }
+    var starttime = clockTime
+    println("start time:" + starttime)
     val seed = 123l
     JSimulationScenario.setSeed(seed)
     val simpleBootScenario = SimpleScenarioReconfiguration.scenario(8)
@@ -74,6 +80,9 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     for (i <- 0 to nMessages) {
       SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
     }
+    var endtime = clockTime
+    println("end time:" + endtime)
+    println("time difference: "+ (endtime-starttime))
     deletePersistentStorage()
   }
 
@@ -97,6 +106,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     }
     deletePersistentStorage()
   }
+ */
 
   def deletePersistentStorage(): Unit ={
     val path = new java.io.File(".").getCanonicalPath;
