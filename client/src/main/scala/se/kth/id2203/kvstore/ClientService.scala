@@ -87,7 +87,7 @@ class ClientService extends ComponentDefinition {
   timer uponEvent {
     case ConnectTimeout(_) => {
       connected match {
-        case Some(ack) => // already connected
+        case Some(ack) => 
         case None => {
           log.error(s"Connection to server $server did not succeed. Shutting down...");
           Kompics.asyncShutdown();
@@ -98,8 +98,8 @@ class ClientService extends ComponentDefinition {
 
   loopbck uponEvent {
     case OpWithPromise(op, promise) => {
-      val rm = RouteMsg(op.key, op); // don't know which partition is responsible, so ask the bootstrap server to forward it
-      trigger(NetMessage(self, server, rm) -> net); // overlayManager
+      val rm = RouteMsg(op.key, op); 
+      trigger(NetMessage(self, server, rm) -> net); 
       pending += (op.id -> promise);
     }
   }
@@ -108,7 +108,7 @@ class ClientService extends ComponentDefinition {
   def op(operation: Op): Future[OpResponse] = {
    // val op = Op(key);
     val owf = OpWithPromise(operation);
-    trigger(owf -> onSelf); // look at loopback event hndler
+    trigger(owf -> onSelf); 
     owf.promise.future
   }
 }

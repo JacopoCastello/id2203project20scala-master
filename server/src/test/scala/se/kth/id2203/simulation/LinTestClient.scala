@@ -33,7 +33,7 @@ class LinTestClient extends ComponentDefinition {
       val messages = SimulationResult[Int]("messages")
       for (i <- 0 to messages) {
         val opPUT = new Op("PUT", i.toString, i.toString, " ")
-        val routeMsg = RouteMsg(opPUT.key, opPUT) // don't know which partition is responsible, so ask the bootstrap server to forward it
+        val routeMsg = RouteMsg(opPUT.key, opPUT) 
         trigger(NetMessage(self, server, routeMsg) -> net)
         trace.enqueue(opPUT)
         pending += (opPUT.id -> opPUT.value)
@@ -41,28 +41,21 @@ class LinTestClient extends ComponentDefinition {
         //SimulationResult += (opPUT.key -> opPUT.value)
 
         val opGet = new Op("GET", i.toString, " ", " ")
-        val routeMsg1 = RouteMsg(opGet.key, opGet) // don't know which partition is responsible, so ask the bootstrap server to forward it
+        val routeMsg1 = RouteMsg(opGet.key, opGet) 
         trigger(NetMessage(self, server, routeMsg1) -> net)
         trace.enqueue(opGet)
         pending += (opGet.id -> opPUT.value)
         logger.info("Sending {}", opGet)
-        //SimulationResult += (opGet.key -> "Sent")
+        
       }
       finish = true;
 
-      /**
-      for(i <- 0 to messages/2) {
-        val op = new Op("CAS", i.toString, i.toString, i.toString)
-        qMsgID = op.id
-        val routeMsg = RouteMsg(op.key, op)
-        trigger(NetMessage(self, server, routeMsg) -> net)
-      }
-       */
+    
     }
   }
 
   net uponEvent {
-        //case NetMessage(header, or @ OpResponse(id, status, value)) => {
+ 
     case NetMessage(header, or @ OpResponse(id, status, res)) =>  {
       logger.debug(s"Got OpResponse: $or")
       traceR.enqueue(or)
@@ -70,26 +63,7 @@ class LinTestClient extends ComponentDefinition {
       SimulationResult += ("finalResult" -> "True")
 
       if(finish){
-        /**
-        for(i <- 0 to SimulationResult[Int]("messages")*2){
-          val opr = trace.dequeue()
-          val res = traceR.dequeue()
-          if(!opr.id.equals(res.id)){
-            SimulationResult += ("finalResult" -> "False")
-            break;
-          }
-          else{
-            if(pending.get(opr.id) == res.value ){
-              SimulationResult += ("finalResult" -> "True")
-            } else {
-              SimulationResult += ("finalResult" -> "False")
-              break;
-            }
-
-
-          }
-        }
-         */
+    
         var i = 0;
         var lin = true;
         while (i < SimulationResult[Int]("messages")*2 && lin) {
@@ -108,8 +82,7 @@ class LinTestClient extends ComponentDefinition {
 
           }
         }
-       // traceNo = traceNo + 1
-        //SimulationResult += (traceNo.toString + self.toString -> correctTrace)
+   
       }
     }
   }
