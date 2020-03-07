@@ -75,9 +75,9 @@ class ScenarioClient extends ComponentDefinition {
 
         for (i <- 0 to messages) {
           if (i < messages / 2)
-            Ops ++= List(new Op("CAS", s"test$i", "1", "1")) 
+            Ops ++= List(new Op("CAS", s"test$i", s"$i", "1"))
           else
-            Ops ++= List(new Op("CAS", s"test$i", s"$i", "1")) 
+            Ops ++= List(new Op("CAS", s"test$i", "1", "1"))
         }
         for (i <- 0 to messages) {
           Ops ++= List(new Op("GET", s"test$i", "", ""))
