@@ -30,33 +30,7 @@ class LinTest extends FlatSpec with Matchers {
 
     simpleBootScenario.simulate(classOf[LauncherComp])
 
-    /*for (i <- 0 to nMessages) {
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print(SimulationResult.get[String](i.toString))
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      //PUT operation
-      //SimulationResult.get[String](i.toString) should be (Some("Sent"))
-      //(messages) should be (4)
-      //SimulationResult.get[String](i.toString) should be (Some(i.toString))
-
-      //(messages) should be (nMessages)
-      //GET operation
-      //SimulationResult.get[String](i.toString) should be (i.toString)
-      //(s.toString) should be (s1.toString)
-    }
-
-    for(i <- 0 to nMessages/2){
-      SimulationResult.get[String](i.toString) should be (i.toString)
-      //(s.toString) should be (s1.toString)
-    }*/
+    
 
     SimulationResult.get[String]("finalResult") should be (Some("True"))
 
