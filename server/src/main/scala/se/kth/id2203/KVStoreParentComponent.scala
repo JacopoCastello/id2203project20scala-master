@@ -20,19 +20,19 @@ class KVParent extends ComponentDefinition {
   val replica: PositivePort[ReplicaMsg] = requires[ReplicaMsg]
   val timer: PositivePort[Timer] = requires[Timer]
 
- // case class BootNewReplica(sender:NetAddress, nodes: Set[NetAddress]) extends KompicsEvent;
+ 
 
   val self = cfg.getValue[NetAddress]("id2203.project.address")
   var  c = 0;
-  // kv = create(classOf[KVService], Init.NONE)
+  
 
   boot uponEvent {
     case Booted(assignment: LookupTable) => {
 
       val topology: Set[NetAddress] = assignment.getNodesforGroup(self)
-      //val topology = assignment.getNodes()
+     
 
-      // initial creation configuration 0. At the new configuration, the KVStoreParent should be passed the id
+      
       c = 0;
       val ri = mutable.Map.empty[NetAddress, Int];
       for (node <- topology) {
@@ -41,7 +41,7 @@ class KVParent extends ComponentDefinition {
 
       val kv = create(classOf[KVService], Init[KVService](c))
       val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology, c, (self, c), ri,  ("FOLLOWER", "UNKNOWN", "RUNNING")))
-      //val consensus = create(classOf[LeaderBasedSequencePaxos], Init[LeaderBasedSequencePaxos](self, topology ))
+      
       val gossipLeaderElection = create(classOf[GossipLeaderElection], Init[GossipLeaderElection](self, topology))
       val eventuallyPerfectFailureDetector = create(classOf[EPFD], Init[EPFD](self, topology, c))
 
@@ -52,19 +52,19 @@ class KVParent extends ComponentDefinition {
       trigger(new Start() -> eventuallyPerfectFailureDetector.control())
 
 
-      // BallotLeaderElection (for paxos)
+     
       connect[Timer](timer -> gossipLeaderElection)
       connect[Network](net -> gossipLeaderElection)
 
-      // Paxos
+     
       connect[BallotLeaderElection](gossipLeaderElection -> consensus)
       connect[Network](net -> consensus)
 
-      // KV
+      
       connect[Network](net -> kv)
       connect[SequenceConsensus](consensus -> kv)
 
-      //EPFD
+      
       connect[Network](net -> eventuallyPerfectFailureDetector)
       connect[Timer](timer -> eventuallyPerfectFailureDetector)
 
@@ -75,7 +75,7 @@ class KVParent extends ComponentDefinition {
 
         log.info("Boot new replica for node" + self + " in configuration " + c + " in group " + group)
 
-        c += 1 // move to next config
+        c += 1 
         val ri = mutable.Map.empty[NetAddress, Int];
         for (node <- group) {
           ri += (node -> c)
@@ -92,19 +92,19 @@ class KVParent extends ComponentDefinition {
         trigger(new Start() -> eventuallyPerfectFailureDetector.control())
 
 
-        // BallotLeaderElection (for paxos)
+        
         connect[Timer](timer -> gossipLeaderElection)
         connect[Network](net -> gossipLeaderElection)
 
-        // Paxos
+        
         connect[BallotLeaderElection](gossipLeaderElection -> consensus)
         connect[Network](net -> consensus)
 
-        // KV
+       
         connect[Network](net -> kv)
         connect[SequenceConsensus](consensus -> kv)
 
-        //EPFD
+       
         connect[Network](net -> eventuallyPerfectFailureDetector)
         connect[Timer](timer -> eventuallyPerfectFailureDetector)
 
