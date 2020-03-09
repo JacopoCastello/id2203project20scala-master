@@ -38,12 +38,11 @@ class ParentComponent extends ComponentDefinition {
   val timer = requires[Timer];
   val replica = requires[ReplicaMsg];
   //******* Children ******
-  val overlay = create(classOf[VSOverlayManager], Init.NONE); // --> go to VSOverlayManager
-  //val kv = create(classOf[KVService], Init.NONE);// --> go to KVService
+  val overlay = create(classOf[VSOverlayManager], Init.NONE); 
 
   val boot = cfg.readValue[NetAddress]("id2203.project.bootstrap-address") match {
-    case Some(_) => create(classOf[BootstrapClient], Init.NONE); // start in client mode
-    case None    => create(classOf[BootstrapServer], Init.NONE); // start in server mode
+    case Some(_) => create(classOf[BootstrapClient], Init.NONE); 
+    case None    => create(classOf[BootstrapServer], Init.NONE); 
   }
   val kvParent = create(classOf[KVParent], Init.NONE)
 
@@ -54,13 +53,10 @@ class ParentComponent extends ComponentDefinition {
     connect(Bootstrapping)(boot -> overlay);
     connect[Network](net -> overlay);
     connect[ReplicaMsg](replica -> overlay)
-    // KV
-    //connect(Routing)(overlay -> kv);
-    //connect[Network](net -> kv);
+    
 
-    // KVParent
+    
     connect(Bootstrapping)(boot -> kvParent)
-    //connect(ReplicaMsg)(overlay -> kvParent)
     connect[Timer](timer -> kvParent)
     connect[Network](net -> kvParent)
     connect[ReplicaMsg](replica -> kvParent)
