@@ -44,80 +44,65 @@ import scala.collection.mutable
 
   case class Decide(ld: Int, nL: (Int,Long)) extends KompicsEvent;
 
-/*  object State extends Enumeration {
-    type State = Value;
-    val PREPARE, ACCEPT, UNKNOWN, RECOVER = Value;
-  }
 
-  object Role extends Enumeration {
-    type Role = Value;
-    val LEADER, FOLLOWER = Value;
-  }
 
-object ReconfigurationState extends Enumeration {
-  type ReconfigurationState = Value;
-  val WAITING, RUNNING, HELPING = Value;
-}*/
 
-//  Added for the LL
 case class Nack(n: (Int, Long)) extends KompicsEvent
 case class ReplyToNackTimeout(p: NetAddress, nL: (Int, Long), ld: Int, na: (Int, Long), timeout: ScheduleTimeout) extends Timeout(timeout)
 
 
 class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends ComponentDefinition {
 
-    //import Role._
-    //import State._
+    
 
     val sc = provides[SequenceConsensus];
     val ble = requires[BallotLeaderElection];
     val net = requires[Network]
     val rep = requires[ReplicaMsg]
 
-  // Leader Lease
-  //val topo = requires[Topology];  //  Added for LL
-  val timer = requires[Timer];  //  Added for LL
+  
+ 
+  val timer = requires[Timer];
 
-  // initialize:  self, topology, c, (self, c),ri
+
   var (self, pi, c, rself, ri, state, rothers, others) = init match {
     case Init(
     addr: NetAddress,
-    pi: Set[NetAddress] @unchecked,                     // set of processes in config c
-    c: Int,                                              // configuration c
-    rself: (NetAddress, Int),                        // Repnumber of this one
+    pi: Set[NetAddress] @unchecked,                     
+    c: Int,                                              
+    rself: (NetAddress, Int),                        
     ri:mutable.Map[NetAddress, Int],
-    state:(String,String,String))                   // set of replicas in config c (ip:port, Repnumber
-    => (addr, pi, c, rself, ri, state, ri - addr, pi - addr)   //c = configuration i, ri: RID = Netaddr of process, id
+    state:(String,String,String))                  
+    => (addr, pi, c, rself, ri, state, ri - addr, pi - addr)   
   }
 
 
-  // reconfig
-  var sigma = List.empty[RSM_Command];                // the final sequence from the previous configuration or () if i = 0
-
-  // proposer state
-  var nL= (c,0l); //var nL = 0l;
-  var promises = mutable.Map.empty[(NetAddress, Int), ((Int, Long), List[RSM_Command])]; //val acks = mutable.Map.empty[NetAddress, (Long, List[RSM_Command])];
-  val las = mutable.Map.empty[(NetAddress, Int), Int];                                    //length of longest accepted sequence per acceptor
-  val lds = mutable.Map.empty[(NetAddress, Int), Int];                                    // length of longest known decided sequence per acceptor
+  
+  var sigma = List.empty[RSM_Command];                
+  
+  var nL= (c,0l); 
+  var promises = mutable.Map.empty[(NetAddress, Int), ((Int, Long), List[RSM_Command])]; 
+  val las = mutable.Map.empty[(NetAddress, Int), Int];                                    
+  val lds = mutable.Map.empty[(NetAddress, Int), Int];                                    
   for (r <- ri){
     las += (r -> sigma.size)
     lds += (r -> -1);
   }
-  var propCmds = List.empty[RSM_Command];                                                 //set of commands that need to be appended to the log
-  var lc = sigma.size;                                                                    //length of longest chosen sequence
+  var propCmds = List.empty[RSM_Command];                                                
+  var lc = sigma.size;                                                                    
 
 
-  // acceptor state
+
   var nProm = (c,0l);
   var na = (c,0l);
   var va = sigma;
 
 
-  // learner state
+ 
   var   ld = sigma.size
 
-  // lease
-  //cfg.readValue[NetAddress]("id2203.project.bootstrap-address")
+
+
   val leaseDuration = cfg.getValue[Long]("id2203.project.leaseDuration")
   val clockError = cfg.getValue[Long]("id2203.project.clock.error")
   var tprom = 0l
@@ -125,13 +110,13 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   var hasGivenAnyLease = false
   var nacks = 0
 
-  //  Added for LL
+ 
   def clockTime: Long = {
     System.currentTimeMillis()
   }
 
 
-  // Paxos
+
   def suffix(s: List[RSM_Command], l: Int): List[RSM_Command] = {
       s.drop(l)
     }
@@ -157,14 +142,14 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   }
 
     def compareGreaterPromises(x: ((Int, Long), List[RSM_Command]), y: ((Int, Long), List[RSM_Command])): Boolean = {
-      if (compareGreater(x._1, y._1) || (x._1._1 == y._1._1 && x._1._2 == y._1._2 && x._2.size > y._2.size)) { // suffix with max n
+      if (compareGreater(x._1, y._1) || (x._1._1 == y._1._1 && x._1._2 == y._1._2 && x._2.size > y._2.size)) { 
         true
       } else {
         false
       }
     }
 
-    // Reconfiuration
+ 
     def stopped(): Boolean = {
       if (!va.isEmpty) {
         if(va.last.command.opType == "STOP" && va.last.command.value == c.toString()) {
@@ -184,7 +169,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
         var n = (c, b)
         if (self == l && compareGreater(n, nL)) {
           log.info(s"The leader is host: [$self]\n")
-          log.info(s"Clock time: "+clockTime/1000) //  Added for LL
+          log.info(s"Clock time: "+clockTime/1000) 
           trigger(NetMessage(self, self,SetLeader(self)) -> net);
           nL = n
           nProm = n
@@ -196,32 +181,26 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           lds(rself) = ld;
           lc = sigma.size;
           state = ("LEADER", "PREPARE", "RUNNING");
-          tl = clockTime; //  Added for LL
-          nacks = 0;  //  Added for LL
+          tl = clockTime; 
+          nacks = 0; 
           for (r <- rothers) {
             trigger(NetMessage(self, r._1, Prepare(nL, ld, na)) -> net);
           }
-
-
-          // not implemented
-      //  } else if (state == (state._1, RECOVER)) {
-          // send (PrepareReq) to l
+          
         } else {
           state = ("FOLLOWER", state._2, "RUNNING");
         }
 
       }
     }
-    // not implemented:
-    // upon connectionlost
-    // upon preparereq
+   
 
-    // Consensus
+    
     sc uponEvent {
       case SC_Propose(scp) => {
         log.info(s"The command {} was proposed!", scp.command.opType)
         log.info(s"The current state of the node is {}", state)
-      //  if(canReplyWithLocalState(scp)){
+      
         if(scp.command.opType == "GET" && state == ("LEADER", "ACCEPT", "RUNNING") && ((clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0)) {
           trigger(SC_Decide(scp) -> sc)
 
@@ -257,7 +236,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           trigger(scheduledTimeout -> timer)
         }
       }
-          //SC_Handover for Reconfiguration
+         
       case NetMessage(sender, SC_Handover(cOld, sigmaOld)) => {
         if(cOld == c-1 && sigmaOld.last.command.opType == "STOP"){
           log.info("Handover")
@@ -293,7 +272,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
             if (!va.isEmpty && va.last.command.opType == "STOP" && va.last.command.value.toInt == c) {
               propCmds = List.empty; // commands will never be decided
             } else {
-              if (comtypes.contains("STOP") && va.last.command.value.toInt == c) { // ordering SSi as the last one to add to va
+              if (comtypes.contains("STOP") && va.last.command.value.toInt == c) { 
                 var stop = propCmds.filter(x => x.command.opType == "STOP")
                 for (cmd <- propCmds.filter(x => x.command.opType != "STOP")) {
                   va = va ++ List(cmd)
@@ -307,7 +286,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
               las((self, c)) = va.size;
               state = ("LEADER", "ACCEPT","RUNNING");
             }
-            for (r <- rothers.filter(x => lds(x) != -1 )) {//&& lds(x) != va.size
+            for (r <- rothers.filter(x => lds(x) != -1 )) {
               var sfxp = suffix(va, lds(r))
               trigger(NetMessage(self, r._1, AcceptSync(nL, sfxp, lds(r))) -> net);
             }
@@ -338,10 +317,10 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(p, Prepare(np, ldp, nal)) => {
         log.info(s"Value of p: ${p.src}")
         log.info(s"Value of np: ${np}")
-        // has not given lease or lease is expired
+      
        if (compareGreater(np, nProm)&&  (!hasGivenAnyLease || (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0 )) {
 
-       // if (canGiveLease(np, nProm)) {
+       
           hasGivenAnyLease = true;
           tprom = clockTime;
           nProm = np;
@@ -352,7 +331,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
           }
           trigger(NetMessage(self, p.src, Promise(np, na, sfx, ld)) -> net);
         } else{
-          // if the only reason a promise wasn't given is the lease violation, then ask to try again later
+          
           if (compareGreater(np, nProm) && (clockTime - tprom) <= leaseDuration * (1000 + clockError) / 1000.0) {
             trigger(NetMessage(self, p.src, Nack(np)) -> net);
           }
@@ -382,7 +361,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
                 trigger(NetMessage(self, self, Handover(c, va)) -> net)
               }
               suicide()
-              // KIll the components - triger kill on component
+              
             }
             trigger(SC_Decide(va(ld)) -> sc);
             ld = ld + 1;
