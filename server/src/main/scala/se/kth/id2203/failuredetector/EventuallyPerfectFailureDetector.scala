@@ -21,38 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package se.kth.id2203.kvstore
+package se.kth.id2203.failuredetector
 
-import java.util.UUID;
-import se.sics.kompics.KompicsEvent;
+import se.kth.id2203.networking.NetAddress
+import se.sics.kompics.sl._
+import se.sics.kompics.KompicsEvent
 
-trait Operation extends KompicsEvent {
-  def id: UUID;
-  def opType: String; //Type can be "GET", "PUT" and "CAS"
-  def key: String;
-  def value: String;
-  def expected: String
-  
+case class Suspect(src: NetAddress) extends KompicsEvent;
+case class Restore(src: NetAddress) extends KompicsEvent;
+
+class EventuallyPerfectFailureDetector extends Port {
+  indication[Suspect];
+  indication[Restore];
 }
-
-@SerialVersionUID(-374812437823538710L)
-case class Op(opType: String, key: String, value: String, expected: String, id: UUID = UUID.randomUUID()) extends Operation with Serializable {
-  def response(status: OpCode.OpCode, value: String): OpResponse = OpResponse(id, status, value);
-}
-
-object OpCode {
-  sealed trait OpCode;
-  case object Ok extends OpCode;
-  case object NotFound extends OpCode;
-  case object NotImplemented extends OpCode;
-}
-
-trait OperationResponse extends KompicsEvent {
-  def id: UUID;
-  def status: OpCode.OpCode;
-  def value: Any;
-}
-
-@SerialVersionUID(155271583133228661L)
-case class OpResponse(id: UUID, status: OpCode.OpCode, value: Any) extends OperationResponse with Serializable;
-

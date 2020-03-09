@@ -24,12 +24,11 @@
 package se.kth.id2203;
 
 import se.kth.id2203.bootstrapping._
-import se.kth.id2203.kvstore.KVService;
-import se.kth.id2203.networking.NetAddress;
+import se.kth.id2203.networking.NetAddress
 import se.kth.id2203.overlay._
+import se.sics.kompics.Init
+import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
-import se.sics.kompics.Init;
-import se.sics.kompics.network.Network;
 import se.sics.kompics.timer.Timer;
 
 class ParentComponent extends ComponentDefinition {
@@ -37,13 +36,16 @@ class ParentComponent extends ComponentDefinition {
   //******* Ports ******
   val net = requires[Network];
   val timer = requires[Timer];
+  val replica = requires[ReplicaMsg];
   //******* Children ******
   val overlay = create(classOf[VSOverlayManager], Init.NONE); // --> go to VSOverlayManager
-  val kv = create(classOf[KVService], Init.NONE);// --> go to KVService
+  //val kv = create(classOf[KVService], Init.NONE);// --> go to KVService
+
   val boot = cfg.readValue[NetAddress]("id2203.project.bootstrap-address") match {
     case Some(_) => create(classOf[BootstrapClient], Init.NONE); // start in client mode
     case None    => create(classOf[BootstrapServer], Init.NONE); // start in server mode
   }
+  val kvParent = create(classOf[KVParent], Init.NONE)
 
   {
     connect[Timer](timer -> boot);
@@ -51,8 +53,17 @@ class ParentComponent extends ComponentDefinition {
     // Overlay
     connect(Bootstrapping)(boot -> overlay);
     connect[Network](net -> overlay);
+    connect[ReplicaMsg](replica -> overlay)
     // KV
-    connect(Routing)(overlay -> kv);
-    connect[Network](net -> kv);
+    //connect(Routing)(overlay -> kv);
+    //connect[Network](net -> kv);
+
+    // KVParent
+    connect(Bootstrapping)(boot -> kvParent)
+    //connect(ReplicaMsg)(overlay -> kvParent)
+    connect[Timer](timer -> kvParent)
+    connect[Network](net -> kvParent)
+    connect[ReplicaMsg](replica -> kvParent)
   }
+
 }

@@ -39,55 +39,59 @@ import se.sics.kompics.sl.simulator._
 import scala.concurrent.duration._
 import scala.reflect.io.Directory
 
-class OpsTest extends FlatSpec with Matchers {
+class ReconfigurationTest extends FlatSpec with Matchers {
 
   private val nMessages = 10;
 
 
-  "Simple Operations" should "return None" in { 
+  "Simple Operations" should "return None" in {
     val seed = 123l;
     JSimulationScenario.setSeed(seed);
-    val simpleBootScenario = SimpleScenario.scenario(6);
+    val simpleBootScenario = SimpleScenarioReconfiguration.scenario(8);
     val res = SimulationResultSingleton.getInstance();
     SimulationResult += ("operations" -> "SimpleOperation")
     SimulationResult += ("nMessages" -> nMessages);
     simpleBootScenario.simulate(classOf[LauncherComp]);
-    for (i <- 0 to nMessages) {
-      SimulationResult.get[String](s"test$i") should be(Some("None"));
-      
-    }
+    //val simpleBootScenariokill = SimpleScenarioReconfiguration.scenariokill(3);
+    //simpleBootScenariokill.simulate(classOf[LauncherComp]);
+     for (i <- 0 to nMessages) {
+       SimulationResult.get[String](s"test$i") should be(Some("None"));
+
+     }
     deletePersistentStorage()
   }
 
+  "Write then Read" should "read the writen value" in {
+      def clockTime: Long = {
+        System.currentTimeMillis()
+      }
 
-  "Write then Read" should "read the written value" in { 
-    def clockTime: Long = {
-      System.currentTimeMillis()
-    }
-    var starttime = clockTime
-    println("start time:" + starttime)
-    val seed = 123l
-    JSimulationScenario.setSeed(seed)
-    val simpleBootScenario = SimpleScenario.scenario(6)
-    val res = SimulationResultSingleton.getInstance()
+      var starttime = clockTime
+      println("start time:" + starttime)
+      val seed = 123l
+      JSimulationScenario.setSeed(seed)
+      val simpleBootScenario = SimpleScenarioReconfiguration.scenario(8)
+      val res = SimulationResultSingleton.getInstance()
 
-    SimulationResult += ("operations" -> "Write")
-    SimulationResult += ("nMessages" -> nMessages)
+      SimulationResult += ("operations" -> "Write")
+      SimulationResult += ("nMessages" -> nMessages)
 
-    simpleBootScenario.simulate(classOf[LauncherComp])
+      simpleBootScenario.simulate(classOf[LauncherComp])
 
-    for (i <- 0 to nMessages) {
-      SimulationResult.get[String](s"test$i") should be(Some((s"$i" )))
-    }
-    var endtime = clockTime
-    println("end time:" + endtime)
-    println("time difference: "+ (endtime-starttime))
-    deletePersistentStorage()
+      for (i <- 0 to nMessages) {
+        SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+      }
+      var endtime = clockTime
+      println("end time:" + endtime)
+      var timedif = (endtime - starttime)
+      println("time difference: " + (endtime - starttime))
+      deletePersistentStorage()
   }
-  "Compare and swap" should "swap the values if they are correct" in { 
+
+  "Compare and swap" should "swap the values if they are correct" in {
     val seed = 123l
     JSimulationScenario.setSeed(seed)
-    val simpleBootScenario = SimpleScenario.scenario(6)
+    val simpleBootScenario = SimpleScenario.scenario(8)
     val res = SimulationResultSingleton.getInstance()
 
     SimulationResult += ("operations" -> "CAS")
@@ -104,7 +108,6 @@ class OpsTest extends FlatSpec with Matchers {
     }
     deletePersistentStorage()
   }
-
 
   "Write then Read Lease" should "read the written value and track the time" in {
     //for lease test
@@ -148,6 +151,7 @@ class OpsTest extends FlatSpec with Matchers {
     println("lease test done! " )
   }
 
+
   def deletePersistentStorage(): Unit ={
     val path = new java.io.File(".").getCanonicalPath;
     val directory = new Directory(new File((path+"/server/src/main/scala/se/kth/id2203/kvstore/data")))
@@ -155,7 +159,7 @@ class OpsTest extends FlatSpec with Matchers {
   }
 }
 
-object SimpleScenario {
+object SimpleScenarioReconfiguration {
 
   import Distributions._
   // needed for the distributions, but needs to be initialised after setting the seed
@@ -178,13 +182,16 @@ object SimpleScenario {
 
   private def isBootstrap(self: Int): Boolean = self == 1;
 
- 
+  var killed = false
+  private def isKilled(): Boolean = killed == true;
+  private def setKilled(): Unit = killed = true;
+  // val setUniformLatencyNetwork = () => Op.apply((_: Unit) => ChangeNetwork(NetworkModels.withUniformRandomDelay(3, 7)));
 
   val startServerOp = Op { (self: Integer) =>
 
     val selfAddr = intToServerAddress(self)
     val conf = if (isBootstrap(self)) {
-  
+      // don't put this at the bootstrap server, or it will act as a bootstrap client
       Map("id2203.project.address" -> selfAddr)
     } else {
       Map(
@@ -194,22 +201,51 @@ object SimpleScenario {
     StartNode(selfAddr, Init.none[ParentComponent], conf);
   };
 
+  val stopServerOp = Op { (self: Integer) =>
+    val selfAddr = intToServerAddress(self)
+    setKilled()
+    KillNode(selfAddr);
+
+  };
+
   val startClientOp = Op { (self: Integer) =>
     val selfAddr = intToClientAddress(self)
-    val conf = Map(
-      "id2203.project.address" -> selfAddr,
-      "id2203.project.bootstrap-address" -> intToServerAddress(1));
-    StartNode(selfAddr, Init.none[ScenarioClient], conf);
+    if (!isKilled()) {
+      val conf = Map(
+        "id2203.project.address" -> selfAddr,
+        "id2203.project.bootstrap-address" -> intToServerAddress(1));
+      StartNode(selfAddr, Init.none[ScenarioClient], conf);
+    } else {
+      val conf = Map(
+        "id2203.project.address" -> selfAddr,
+        "id2203.project.bootstrap-address" -> intToServerAddress(2));
+      StartNode(selfAddr, Init.none[ScenarioClient], conf);
+    }
   };
 
   def scenario(servers: Int): JSimulationScenario = {
 
-    
+    //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
     val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
     val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
+    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
     startCluster andThen
       100.seconds afterTermination startClients andThen
-      200.seconds afterTermination Terminate
-   
+      10.seconds afterTermination stopServerOp andThen
+      10000.seconds afterTermination startClients andThen
+      10000.seconds afterTermination Terminate
   }
+
+  /*def scenariokill(servers: Int): JSimulationScenario = {
+
+    //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
+    val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
+    val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
+    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
+    startCluster andThen
+      //100.seconds afterTermination startClients andThen
+      10.seconds afterTermination stopServerOp andThen
+      10000.seconds afterTermination Terminate
+  }*/
+
 }
