@@ -49,7 +49,7 @@ class LinTestReconfiguration extends FlatSpec with Matchers {
 object LinTestReconfigurationScenario {
 
   import Distributions._
-  // needed for the distributions, but needs to be initialised after setting the seed
+  
   implicit val random = JSimulationScenario.getRandom();
 
   private def intToServerAddress(i: Int): Address = {
@@ -77,7 +77,7 @@ object LinTestReconfigurationScenario {
 
     val selfAddr = intToServerAddress(self)
     val conf = if (isBootstrap(self)) {
-      // don't put this at the bootstrap server, or it will act as a bootstrap client
+      
       Map("id2203.project.address" -> selfAddr)
     } else {
       Map(
