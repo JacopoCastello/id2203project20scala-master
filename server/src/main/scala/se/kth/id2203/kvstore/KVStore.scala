@@ -38,9 +38,7 @@ import scala.io.Source;
 trait ProposedOpTrait extends RSM_Command {
   def source: NetAddress
   def command: Operation
-  /*def confReplicagroup: Set[NetAddress]
-  def confNumber: Int
-  def confRID: mutable.Map[NetAddress, Int]*/
+  
 }
 
 class PersistentStorage(address: String) {
@@ -69,13 +67,13 @@ class PersistentStorage(address: String) {
   }
 }
 
-//case class OperationToPropose(source: NetAddress, command: Operation, confReplicagroup: Set[NetAddress], confNumber: Int, confRID: mutable.Map[NetAddress, Int]) extends ProposedOpTrait
+
 case class OperationToPropose(source: NetAddress, command: Operation) extends ProposedOpTrait
 class KVService(init: Init[KVService])  extends ComponentDefinition {
 
   var (c) = init match {
     case Init(
-    c: Int)                                             // configuration
+    c: Int)                                            
     => ( c)
   }
 
@@ -117,7 +115,7 @@ class KVService(init: Init[KVService])  extends ComponentDefinition {
   }
 
 
-  // The decided upon messages
+  
   consensus uponEvent {
 
     case SC_Decide(OperationToPropose(source: NetAddress, command: Op)) => {
@@ -125,31 +123,31 @@ class KVService(init: Init[KVService])  extends ComponentDefinition {
         case "GET" =>
           log.info(s"Handling operation {}!", command)
 
-          //trigger(NetMessage(self, source, command.response(OpCode.Ok, storage.getOrElse(command.key, "None"))) -> net)
+          
           trigger(NetMessage(self, source, command.response(OpCode.Ok, persistentStorage.getValue(command.key))) -> net)
         case "PUT" =>
           log.info(s"Handling operation {}!", command)
-          //storage += (command.key -> command.value)
+          
           persistentStorage.addEntry(command.key, command.value)
           log.info("storage at: "+ self + " is "+ storage)
           trigger(NetMessage(self, source, command.response(OpCode.Ok, command.value)) -> net)
         case "CAS" =>
           log.info(s"Handling operation {}!", command)
           val result = persistentStorage.getValue(command.key) match {
-          //val result = storage.get(command.key) match {
+     
             case "None" => {
-              // Only add if it is expected to be empty
+             
               if (command.expected.isEmpty) {
-                //storage += (command.key -> command.value)
+                
                 persistentStorage.addEntry(command.key, command.value)
               }
               None
             }
             case value => {
-              // Only perform the operation if it is the same
+            
               if (command.expected != "" && command.expected == value) {
                 persistentStorage.addEntry(command.key, command.value)
-                //storage(command.key) = command.value
+                
               }
               log.info("storage at: "+ self + " is "+ storage)
               value
