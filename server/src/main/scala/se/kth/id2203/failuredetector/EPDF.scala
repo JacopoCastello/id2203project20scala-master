@@ -31,31 +31,31 @@ import se.sics.kompics.network.Network
 import se.sics.kompics.sl.{ComponentDefinition, Init, PositivePort}
 import se.sics.kompics.timer.Timer
 
-//Custom messages to be used in the internal component implementation
+
 case class CheckTimeout(timeout: ScheduleTimeout) extends Timeout(timeout);
 
 case class HeartbeatReply(seq: Int, config: Int) extends KompicsEvent;
 case class HeartbeatRequest(seq: Int, config: Int) extends KompicsEvent;
 
 
-//Define EPFD Implementation
+
 class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
 
-  //EPFD subscriptions
+
   val timer = requires[Timer];
   val net: PositivePort[Network] = requires[Network]
   val epfd = provides[EventuallyPerfectFailureDetector];
 
-  // EPDF component state and initialization
+  
 
-  //configuration parameters
+  
   val (self, topology, c) = epfdInit match {
     case Init(self: NetAddress, topology: Set[NetAddress], c: Int) => (self, topology, c)
   }
 
   val delta = 100000
 
-  //mutable state
+ 
   var period = delta
   var alive = topology
   var suspected = Set[NetAddress]();
@@ -67,7 +67,7 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
     trigger(scheduledTimeout -> timer);
   }
 
-  //EPFD event handlers
+  
   ctrl uponEvent {
     case _: Start =>  {
       startTimer(0)
@@ -89,7 +89,7 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
 
           suspected = suspected + p;
           log.info("Suspecting " + p)
-          //trigger(Suspect(p) -> epfd); FOR TESTING VIA NET
+          
           trigger(NetMessage(self, self, Suspect(p)) -> net);
           suicide()
         } else if (alive.contains(p) && suspected.contains(p)) {
@@ -108,21 +108,17 @@ class EPFD(epfdInit: Init[EPFD]) extends ComponentDefinition {
 
     case NetMessage(src, HeartbeatRequest(seq, config)) =>  {
       log.info("Being sent from configuration: " + config + " to configuration " + c)
-    //  if (config == c) {
+ 
         trigger(NetMessage(src, HeartbeatReply(seq, config)) -> net)
-     /* } else {
-        log.info("Error, configs are not the same")
-      }*/
+     
     }
     case NetMessage(src, HeartbeatReply(seq, config)) => {
       log.info("Being sent from configuration: " + config + " to configuration " + c)
-    //  if (config == c) {
+    
         if ((seq == seqnum) || suspected.contains(src.src)) {
           alive = alive + src.src
         }
-     /* } else {
-        log.info("Error, configs are not the same")
-      }*/
+    
     }
   }
 };
