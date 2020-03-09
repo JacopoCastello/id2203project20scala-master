@@ -23,4 +23,4 @@
  */
 package se.kth.id2203.bootstrapping;
 
-trait NodeAssignment; // just a marker
+trait NodeAssignment; 
