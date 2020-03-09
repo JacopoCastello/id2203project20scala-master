@@ -5,37 +5,33 @@ You are encouraged to create your own forks and work on them, modifying everythi
 
 ## Tasklist
 1. Infrastructure
-- [ ] Partition key-space
-- [ ] Replication Algorithm
-- [ ] Lookup values
-- [ ] Failure Detector
-- [ ] Tests for all above
-- [ ] Deployment
+- [x] Partition key-space
+- [x] Replication Algorithm
+- [x] Lookup values
+- [x] Failure Detector
+- [x] Tests for all above
+- [x] Deployment
 
 2. KV-Store
-- [ ] PUT and GET
-- [ ] Replication Algorithm (1)
-- [ ] CAS 
-- [ ] Tests for all above
+- [x] PUT and GET
+- [x] Replication Algorithm (1)
+- [x] CAS 
+- [x] Tests for all above
 
 3. Reconfiguration
-- [ ] Reconfiguration support
-- [ ] Routing protocol (1)
-- [ ] Test for all above
+- [x] Reconfiguration support
+- [x] Routing protocol (1)
+- [x] Test for all above
 
 4. Leader Lease
-- [ ] leased-based mechanism on non-reconfigurable code
-- [ ] benchmark
-- [ ] test for all above
+- [x] leased-based mechanism on non-reconfigurable code
+- [x] benchmark
+- [x] test for all above
 
 5. Reconfigurable Leader Leases
-- [ ] leased-based mechanism on reconfigurable code
+- [x] leased-based mechanism on reconfigurable code
+- [x] benchmark
 
-## Start to copy
-Boostrap: java -jar server/target/scala-2.13/server.jar -p 45678
-Normal nº 1: java -jar server/target/scala-2.13/server.jar -p 45679 -s localhost:45678
-Normal nº2: java -jar server/target/scala-2.13/server.jar -p 45680 -s  localhost:45678
-Client: java -jar client/target/scala-2.13/client.jar -p 56787 -s localhost:45678
 
 ## Overview
 

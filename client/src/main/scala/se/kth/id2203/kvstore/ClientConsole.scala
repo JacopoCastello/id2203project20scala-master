@@ -32,9 +32,9 @@ import concurrent.Await
 import concurrent.duration._
 
 object ClientConsole {
-  def lowercase[_: P] = P(CharIn("a-z"))
-  def uppercase[_: P] = P(CharIn("A-Z"))
-  def digit[_: P] = P(CharIn("0-9"))
+  def lowercase[_: P] = P(CharsWhileIn("a-z"))
+  def uppercase[_: P] = P(CharsWhileIn("A-Z"))
+  def digit[_: P] = P(CharsWhileIn("0-9"))
   def simpleStr[_: P] = P(lowercase | uppercase | digit)
   val colouredLayout = new ColoredPatternLayout("%d{[HH:mm:ss,SSS]} %-5p {%c{1}} %m%n");
 }
@@ -46,21 +46,73 @@ class ClientConsole(val service: ClientService) extends CommandConsole with Pars
   override def onInterrupt(): Unit = exit();
 
   val opParser = new ParsingObject[String] {
-    override def parseOperation[_: P]: P[String] = P("op" ~ " " ~ simpleStr.!);
+    override def parseOperation[_: P]: P[String] = P("op" ~ (" " ~ simpleStr).rep.!);
   }
 
   val opCommand = parsed(opParser, usage = "op <key>", descr = "Executes an op for <key>.") { key =>
-    println(s"Op with $key");
-
-    val fr = service.op(key); // call ClientService op(key)
+    println(s"Input for Op: $key");
+    
+    var input: Array[String] = key.split(" ")
+    var operationType = input(1).toUpperCase()
+    var size = input.length
+    
+   if(size < 3){ 
+   println("Too few input fields provided");
+   }
+   else{
+   
+    var keyV = input(2)
+     
+     if(size == 3 && operationType == "GET"){
+       
+       val fr = service.op(Op(operationType, keyV, " ", " "));
     out.println("Operation sent! Awaiting response...");
     try {
       val r = Await.result(fr, 5.seconds);
-      out.println("Operation complete! Response was: " + r.status);
+      out.println("Operation complete! Response was: " + r.status + " Result was: " + r.value);
     } catch {
       case e: Throwable => logger.error("Error during op.", e);
     }
+     
+        
+   
+   }
+   
+   if(size == 4 && operationType == "PUT"){
+     
+     var valuePut = input(3)
+     
+     val fr = service.op(Op(operationType, keyV, valuePut, " ")); 
+    out.println("Operation sent! Awaiting response...");
+    try {
+      val r = Await.result(fr, 5.seconds);
+      out.println("Operation complete! Response was: " + r.status + " Result was: " + r.value);
+    } catch {
+      case e: Throwable => logger.error("Error during op.", e);
+    }
+   
+   }
+   
+   if(size == 5 && operationType == "CAS"){
+     
+     var valueCas = input(4)
+     var expectedCas = input(3)
+     
+     val fr = service.op(Op(operationType, keyV, valueCas, expectedCas)); 
+    out.println("Operation sent! Awaiting response...");
+    try {
+      val r = Await.result(fr, 5.seconds);
+      out.println("Operation complete! Response was: " + r.status + " Result was: " + r.value);
+    } catch {
+      case e: Throwable => logger.error("Error during op.", e);
+    }
+   
+   }
+    
+     
+   }
+    
   };
 
 }
-// todo: opertions implementation in here
+

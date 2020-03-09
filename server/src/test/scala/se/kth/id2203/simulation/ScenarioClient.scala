@@ -23,16 +23,17 @@
  */
 package se.kth.id2203.simulation;
 
-import java.util.UUID;
-import se.kth.id2203.kvstore._;
-import se.kth.id2203.networking._;
-import se.kth.id2203.overlay.RouteMsg;
+import java.util.UUID
+
+import se.kth.id2203.kvstore.{Op, OpResponse, Operation}
+import se.kth.id2203.networking._
+import se.kth.id2203.overlay.RouteMsg
+import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
-import se.sics.kompics.Start;
-import se.sics.kompics.network.Network;
-import se.sics.kompics.timer.Timer;
-import se.sics.kompics.sl.simulator.SimulationResult;
-import collection.mutable;
+import se.sics.kompics.sl.simulator.SimulationResult
+import se.sics.kompics.timer.Timer
+
+import scala.collection.mutable;
 
 class ScenarioClient extends ComponentDefinition {
 
@@ -43,26 +44,66 @@ class ScenarioClient extends ComponentDefinition {
   val self = cfg.getValue[NetAddress]("id2203.project.address");
   val server = cfg.getValue[NetAddress]("id2203.project.bootstrap-address");
   private val pending = mutable.Map.empty[UUID, String];
+  var op_index = 0
+  var Ops = List.empty[Operation]
   //******* Handlers ******
   ctrl uponEvent {
     case _: Start => {
-      val messages = SimulationResult[Int]("messages");
-      for (i <- 0 to messages) {
-        val op = new Op(s"test$i");
-        val routeMsg = RouteMsg(op.key, op); // don't know which partition is responsible, so ask the bootstrap server to forward it
-        trigger(NetMessage(self, server, routeMsg) -> net);
-        pending += (op.id -> op.key);
-        logger.info("Sending {}", op);
-        SimulationResult += (op.key -> "Sent");
+      val messages = SimulationResult[Int]("nMessages");
+      val op_type: String = SimulationResult[String]("operations")
+      if (op_type == "SimpleOperation" ) {
+        for (i <- 0 to messages) {
+          Ops ++= List(new Op("GET", s"test$i", "", "")) 
+        }
+      } else if (op_type == "Write" ) {
+        for (i <- 0 to messages) {
+          Ops ++= List(new Op("PUT", s"test$i", s"$i", "")) 
+          Ops ++= List(new Op("GET", s"test$i", "", "")) 
+
+        }
+        for (i <- 0 to messages) {
+          Ops ++= List(new Op("GET", s"test$i", "", "")) 
+        }
+      } else if (op_type == "CAS") {
+        for (i <- 0 to messages) {
+          // Shoud result in a list with the values 0..nValues
+          if (i < messages / 2)
+            Ops ++= List(new Op("PUT", s"test$i", s"$i", ""))
+          else
+            Ops ++= List(new Op("PUT", s"test$i", s"1", ""))
+        } // Ops = (1,2,3, ..., nMessages/2, 1, 1, ... )
+
+        for (i <- 0 to messages) {
+          if (i < messages / 2)
+            Ops ++= List(new Op("CAS", s"test$i", s"$i", "1"))
+          else
+            Ops ++= List(new Op("CAS", s"test$i", "1", "1"))
+        }
+        for (i <- 0 to messages) {
+          Ops ++= List(new Op("GET", s"test$i", "", ""))
+        }
       }
+      send();
+    }
+  }
+
+  def send() ={
+    var op_index = 0;
+    while (op_index < Ops.size) {
+      val op = Ops(op_index)
+      val routeMsg = RouteMsg(op.key, op); 
+      trigger(NetMessage(self, server, routeMsg) -> net);
+      pending += (op.id -> op.key);
+      logger.info("Sending {}", op);
+      op_index += 1
     }
   }
 
   net uponEvent {
-    case NetMessage(header, or @ OpResponse(id, status)) => {
+    case NetMessage(header, or @ OpResponse(id, status, value)) => {
       logger.debug(s"Got OpResponse: $or");
       pending.remove(id) match {
-        case Some(key) => SimulationResult += (key -> status.toString());
+        case Some(key) => SimulationResult += (key -> value.toString());
         case None      => logger.warn("ID $id was not pending! Ignoring response.");
       }
     }

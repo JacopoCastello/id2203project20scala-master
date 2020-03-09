@@ -51,25 +51,25 @@ object Main {
   Conversions.register(NetAddressConverter);
   Serializers.register(classOf[Serializable], "javaS");
 
-  def main(args: Array[String]): Unit = { //args should have the given parameters: -p for bootstrp, -p and -s for normal server
-    val conf = new Conf(args.toSeq); // turning the args into a conf object (see class above) --> test if given ip / port has the right format and turn into val
-    // avoid constant conversion of the address by converting once and reassigning
-    // sorry Java API  only :(
-    val c = Kompics.getConfig().asInstanceOf[Config.Impl]; // some config Kompics stuff -> probably loading the predefines conf from reference.conf
+  def main(args: Array[String]): Unit = { 
+    val conf = new Conf(args.toSeq); 
+    
+    
+    val c = Kompics.getConfig().asInstanceOf[Config.Impl]; 
     val configSelf = c.getValue("id2203.project.address", classOf[NetAddress]);
-    assert(configSelf != null, { "No config provided!" }); // it would be in the reference.conf --> here the bootstrapp addr, port, minnumber of nodes are specified
+    assert(configSelf != null, { "No config provided!" }); 
     val configBuilder = c.modify(UUID.randomUUID());
-    val self = (conf.ip.toOption, conf.port.toOption) match { //inintializing self with ip and port
-      case (None, None) => configSelf // if nor given set it to Bootstrapp server / predefined in reference.conf
-      case (cip, cp)    => NetAddress(cip.getOrElse(configSelf.getIp()), cp.getOrElse(configSelf.getPort())) //set to the given parameters
+    val self = (conf.ip.toOption, conf.port.toOption) match { 
+      case (None, None) => configSelf 
+      case (cip, cp)    => NetAddress(cip.getOrElse(configSelf.getIp()), cp.getOrElse(configSelf.getPort())) 
     };
-    configBuilder.setValue("id2203.project.address", self); // addr is ip, port
+    configBuilder.setValue("id2203.project.address", self); 
     if (conf.server.isSupplied) {
-      configBuilder.setValue("id2203.project.bootstrap-address", conf.server()); //set -s arg to bootstrap addr
+      configBuilder.setValue("id2203.project.bootstrap-address", conf.server()); 
     }
     val configUpdate = configBuilder.finalise();
-    c.apply(configUpdate, ValueMerger.NONE); //update the reference.conf
-    Kompics.createAndStart(classOf[HostComponent]); //start the node --> go to HostComponent
+    c.apply(configUpdate, ValueMerger.NONE); 
+    Kompics.createAndStart(classOf[HostComponent]); 
     Kompics.logger.info("Kompics started.");
     Kompics.waitForTermination();
     Kompics.logger.info("Kompics was terminated. Exiting...");

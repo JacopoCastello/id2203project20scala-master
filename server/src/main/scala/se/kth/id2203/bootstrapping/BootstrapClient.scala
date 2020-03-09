@@ -90,7 +90,7 @@ class BootstrapClient extends ComponentDefinition {
           trigger(NetMessage(self, server, Ready) -> net);
           state = Started;
         }
-        case _ => // ignore
+        case _ => 
       }
     }
   }
@@ -98,7 +98,7 @@ class BootstrapClient extends ComponentDefinition {
   override def tearDown(): Unit = {
     timeoutId match {
       case Some(tid) => trigger(new CancelPeriodicTimeout(tid) -> timer);
-      case None      => // nothing to cancel
+      case None      =>
     }
   }
 }

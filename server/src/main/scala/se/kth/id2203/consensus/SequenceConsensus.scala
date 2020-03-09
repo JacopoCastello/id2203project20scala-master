@@ -21,38 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package se.kth.id2203.kvstore
+package se.kth.id2203.consensus
+import se.kth.id2203.kvstore.Operation
+import se.kth.id2203.networking.NetAddress
+import se.sics.kompics.sl._
+import se.sics.kompics.KompicsEvent
 
-import java.util.UUID;
-import se.sics.kompics.KompicsEvent;
-
-trait Operation extends KompicsEvent {
-  def id: UUID;
-  def opType: String; //Type can be "GET", "PUT" and "CAS"
-  def key: String;
-  def value: String;
-  def expected: String
-  
+trait RSM_Command{
+  def source: NetAddress
+  def command: Operation
 }
 
-@SerialVersionUID(-374812437823538710L)
-case class Op(opType: String, key: String, value: String, expected: String, id: UUID = UUID.randomUUID()) extends Operation with Serializable {
-  def response(status: OpCode.OpCode, value: String): OpResponse = OpResponse(id, status, value);
+case class SC_Propose(value: RSM_Command) extends KompicsEvent;
+case class SC_Decide(value: RSM_Command) extends KompicsEvent;
+case class SC_Handover(cOld: Int, sigmaOld:List[RSM_Command]) extends KompicsEvent;
+case class SetLeader(sender:NetAddress) extends KompicsEvent;
+
+class SequenceConsensus extends Port {
+  request[SC_Propose];
+  indication[SC_Decide];
+  request[SC_Handover]
+  indication[SetLeader];
 }
-
-object OpCode {
-  sealed trait OpCode;
-  case object Ok extends OpCode;
-  case object NotFound extends OpCode;
-  case object NotImplemented extends OpCode;
-}
-
-trait OperationResponse extends KompicsEvent {
-  def id: UUID;
-  def status: OpCode.OpCode;
-  def value: Any;
-}
-
-@SerialVersionUID(155271583133228661L)
-case class OpResponse(id: UUID, status: OpCode.OpCode, value: Any) extends OperationResponse with Serializable;
-
