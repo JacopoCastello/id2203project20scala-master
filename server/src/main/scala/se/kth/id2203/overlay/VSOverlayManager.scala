@@ -31,16 +31,7 @@ import se.sics.kompics.network.Network
 import se.sics.kompics.sl._
 import se.sics.kompics.timer.Timer
 
-/**
-  * The V(ery)S(imple)OverlayManager.
-  * <p>
-  * Keeps all nodes in a single partition in one replication group.
-  * <p>
-  * Note: This implementation does not fulfill the project task. You have to
-  * support multiple partitions!
-  * <p>
-  * @author Lars Kroll <lkroll@kth.se>
-  */
+
 class VSOverlayManager extends ComponentDefinition {
 
   //******* Ports ******
@@ -54,7 +45,7 @@ class VSOverlayManager extends ComponentDefinition {
 
   //******* Fields ******
   val self = cfg.getValue[NetAddress]("id2203.project.address");
-  private var lut: Option[LookupTable] = None; // --> go to LookupTable
+  private var lut: Option[LookupTable] = None; 
   private var suspected_nodes : Set[NetAddress] = Set();
   //******* Handlers ******
   boot uponEvent {
@@ -73,15 +64,14 @@ class VSOverlayManager extends ComponentDefinition {
 
   net uponEvent {
     case NetMessage(header, RouteMsg(key, msg)) => {
-      //val nodes = lut.get.lookup(key);
+      
       val leader = lut.get.lookup(key);
-      //assert(!nodes.isEmpty, "nodes partition is empty");
-     // nodes.foreach(node => {
-      //  if(!suspected_nodes.contains(node)) { // only sent to alive nodes
+      
+     
+      
           trigger(NetMessage(header.src, leader, msg) -> net);
           log.info(s"Forwarding message for key $key to $leader");
-      //  }
-     // })
+     
     }
     case NetMessage(header, msg: Connect) => {
       lut match {
@@ -109,7 +99,7 @@ class VSOverlayManager extends ComponentDefinition {
         suspected_nodes += p
 
       }
-   //  }
+ 
     }
 
     case NetMessage(sender,Restore(p: NetAddress)) => {
