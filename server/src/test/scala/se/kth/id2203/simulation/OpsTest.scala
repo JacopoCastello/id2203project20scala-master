@@ -107,10 +107,10 @@ class OpsTest extends FlatSpec with Matchers {
 
 
   "Write then Read Lease" should "read the written value and track the time" in {
-    //for lease test
+   
     var res:Map[Int,Long]=Map()
     val nMessagesL = Seq(10, 100, 1000)
-   //val nMessagesL = Seq(10000) //test 10000 with 2 rounds, it's too much for my laptop
+  
     val rounds = 5
     for(msg <-nMessagesL) {
       var sum =0l
@@ -158,7 +158,7 @@ class OpsTest extends FlatSpec with Matchers {
 object SimpleScenario {
 
   import Distributions._
-  // needed for the distributions, but needs to be initialised after setting the seed
+ 
   implicit val random = JSimulationScenario.getRandom();
 
   private def intToServerAddress(i: Int): Address = {
