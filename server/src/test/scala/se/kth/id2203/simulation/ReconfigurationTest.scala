@@ -52,8 +52,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
     SimulationResult += ("operations" -> "SimpleOperation")
     SimulationResult += ("nMessages" -> nMessages);
     simpleBootScenario.simulate(classOf[LauncherComp]);
-    //val simpleBootScenariokill = SimpleScenarioReconfiguration.scenariokill(3);
-    //simpleBootScenariokill.simulate(classOf[LauncherComp]);
+    
      for (i <- 0 to nMessages) {
        SimulationResult.get[String](s"test$i") should be(Some("None"));
 
@@ -110,10 +109,10 @@ class ReconfigurationTest extends FlatSpec with Matchers {
   }
 
   "Write then Read Lease" should "read the written value and track the time" in {
-    //for lease test
+    
     var res:Map[Int,Long]=Map()
     val nMessagesL = Seq(10, 100, 1000)
-   //val nMessagesL = Seq(10000) //test 10000 with 2 rounds, it's too much for my laptop
+   
     val rounds = 5
     for(msg <-nMessagesL) {
       var sum =0l
@@ -162,7 +161,7 @@ class ReconfigurationTest extends FlatSpec with Matchers {
 object SimpleScenarioReconfiguration {
 
   import Distributions._
-  // needed for the distributions, but needs to be initialised after setting the seed
+  
   implicit val random = JSimulationScenario.getRandom();
 
   private def intToServerAddress(i: Int): Address = {
@@ -185,13 +184,13 @@ object SimpleScenarioReconfiguration {
   var killed = false
   private def isKilled(): Boolean = killed == true;
   private def setKilled(): Unit = killed = true;
-  // val setUniformLatencyNetwork = () => Op.apply((_: Unit) => ChangeNetwork(NetworkModels.withUniformRandomDelay(3, 7)));
+  
 
   val startServerOp = Op { (self: Integer) =>
 
     val selfAddr = intToServerAddress(self)
     val conf = if (isBootstrap(self)) {
-      // don't put this at the bootstrap server, or it will act as a bootstrap client
+     
       Map("id2203.project.address" -> selfAddr)
     } else {
       Map(
@@ -236,16 +235,6 @@ object SimpleScenarioReconfiguration {
       10000.seconds afterTermination Terminate
   }
 
-  /*def scenariokill(servers: Int): JSimulationScenario = {
 
-    //val networkSetup = raise(1, setUniformLatencyNetwork()).arrival(constant(0));
-    val startCluster = raise(servers, startServerOp, 1.toN).arrival(constant(1.second));
-    val startClients = raise(1, startClientOp, 1.toN).arrival(constant(1.second));
-    val stopServerOp = raise(1, this.stopServerOp, 1.toN).arrival(constant(1.second));
-    startCluster andThen
-      //100.seconds afterTermination startClients andThen
-      10.seconds afterTermination stopServerOp andThen
-      10000.seconds afterTermination Terminate
-  }*/
 
 }
