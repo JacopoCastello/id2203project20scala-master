@@ -104,6 +104,50 @@ class OpsTest extends FlatSpec with Matchers {
     }
     deletePersistentStorage()
   }
+
+
+  "Write then Read Lease" should "read the written value and track the time" in {
+    //for lease test
+    var res:Map[Int,Long]=Map()
+    val nMessagesL = Seq(10, 100, 1000)
+   //val nMessagesL = Seq(10000) //test 10000 with 2 rounds, it's too much for my laptop
+    val rounds = 5
+    for(msg <-nMessagesL) {
+      var sum =0l
+      for (i <- 1 to rounds) {
+        def clockTime: Long = {
+          System.currentTimeMillis()
+        }
+
+        var starttime = clockTime
+        println("start time:" + starttime)
+        val seed = 123l
+        JSimulationScenario.setSeed(seed)
+        val simpleBootScenario = SimpleScenarioReconfiguration.scenario(8)
+        val res = SimulationResultSingleton.getInstance()
+
+        SimulationResult += ("operations" -> "Write")
+        SimulationResult += ("nMessages" -> msg)
+
+        simpleBootScenario.simulate(classOf[LauncherComp])
+
+        for (i <- 0 to msg) {
+          SimulationResult.get[String](s"test$i") should be(Some((s"$i")))
+        }
+        var endtime = clockTime
+        println("end time:" + endtime)
+        var timedif = (endtime - starttime)
+        sum += timedif
+        println("time difference: " + (endtime - starttime))
+        deletePersistentStorage()
+      }
+      res += (msg -> (sum / rounds) )
+      println("Average time for " + msg + " is: " + sum / rounds)
+    }
+    println(res)
+    println("lease test done! " )
+  }
+
   def deletePersistentStorage(): Unit ={
     val path = new java.io.File(".").getCanonicalPath;
     val directory = new Directory(new File((path+"/server/src/main/scala/se/kth/id2203/kvstore/data")))

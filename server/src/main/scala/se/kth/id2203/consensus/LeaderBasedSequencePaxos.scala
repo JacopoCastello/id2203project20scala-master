@@ -129,28 +129,6 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
   def clockTime: Long = {
     System.currentTimeMillis()
   }
-  /*def canGiveLease(n: (Int, Long), nProm: (Int, Long)): Boolean = {
-    if(!compareGreater(n, nProm)) {
-      return false
-    }
-    if(!hasGivenAnyLease) {
-      true
-    } else {
-      (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0
-    }
-  }*/
-
-  def canReplyWithLocalState(c: RSM_Command): Boolean = {
-    if(c.command.opType != "GET") {
-      return false
-    }
-    if(state != ("LEADER", "ACCEPT", "RUNNING")) {
-      return false
-    }
-    println( (clockTime - tl) )
-    println( leaseDuration*(1000 - clockError)/1000.0)
-    (clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0
-  }
 
 
   // Paxos
@@ -243,9 +221,11 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case SC_Propose(scp) => {
         log.info(s"The command {} was proposed!", scp.command.opType)
         log.info(s"The current state of the node is {}", state)
-        if(canReplyWithLocalState(scp)){
+      //  if(canReplyWithLocalState(scp)){
+        if(scp.command.opType == "GET" && state == ("LEADER", "ACCEPT", "RUNNING") && ((clockTime - tl) < leaseDuration*(1000 - clockError)/1000.0)) {
           trigger(SC_Decide(scp) -> sc)
-        } else {
+
+      } else {
           if (state == ("LEADER", "PREPARE", "RUNNING")) {
             propCmds = propCmds ++ List(scp);
           }
@@ -358,6 +338,7 @@ class LeaderBasedSequencePaxos(init: Init[LeaderBasedSequencePaxos]) extends Com
       case NetMessage(p, Prepare(np, ldp, nal)) => {
         log.info(s"Value of p: ${p.src}")
         log.info(s"Value of np: ${np}")
+        // has not given lease or lease is expired
        if (compareGreater(np, nProm)&&  (!hasGivenAnyLease || (clockTime - tprom) > leaseDuration*(1000 + clockError)/1000.0 )) {
 
        // if (canGiveLease(np, nProm)) {
