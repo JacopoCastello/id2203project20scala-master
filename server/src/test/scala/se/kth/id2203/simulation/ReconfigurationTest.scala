@@ -23,9 +23,8 @@
  */
 package se.kth.id2203.simulation
 
-import java.io.File
+iimport java.io.File
 import java.net.{InetAddress, UnknownHostException}
-
 import org.scalatest._
 import se.kth.id2203.ParentComponent
 import se.kth.id2203.networking._
@@ -35,9 +34,9 @@ import se.sics.kompics.simulator.run.LauncherComp
 import se.sics.kompics.simulator.{SimulationScenario => JSimulationScenario}
 import se.sics.kompics.sl._
 import se.sics.kompics.sl.simulator._
-
 import scala.concurrent.duration._
 import scala.reflect.io.Directory
+
 
 class ReconfigurationTest extends FlatSpec with Matchers {
 
