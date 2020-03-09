@@ -30,35 +30,24 @@ import se.kth.id2203.networking.NetAddress
 
 import scala.collection.mutable;
 
-/*
-Current implementation:
-3 or more nodes (max 5) per partition
-nodes get assigned depending on how many are available
-key get assigned to partition by modulo numberOfPartitions
-lookup those values via funtion
-Questions:
-How to update lookup for existing nodes once it grows (assignments might be shifted)?
-Also keys might hash to other partitions if more are available -- might be too much effort to shift all of them
---> Let's just assume a fixed number first and deal with this later
- */
+
 
 @SerialVersionUID(6322485231428233902L)
 class LookupTable extends NodeAssignment with Serializable {
   val nodesInPartition = 3;
-  val partitions = TreeSetMultiMap.empty[Int, NetAddress]; //A Multimap is a general way to associate keys with arbitrarily many values.
+  val partitions = TreeSetMultiMap.empty[Int, NetAddress]; 
   var leader = mutable.Map.empty[Int, NetAddress];
 
-  // our lookup
-  //def lookup(key: String): Iterable[NetAddress] = {
-  def lookup(key: String): NetAddress = {
-    val keyHash = math.abs(key.hashCode()); // not collision free
-    val partitionIdx = keyHash % partitions.keySet.size // 0 or 1 or 2 if we have 3 partition --> always in N
 
-    //return partitions(partitionIdx);
+  def lookup(key: String): NetAddress = {
+    val keyHash = math.abs(key.hashCode()); 
+    val partitionIdx = keyHash % partitions.keySet.size 
+
+   
     return leader(partitionIdx)
   }
 
-  // get the group from a nodeaddress which it is in
+  
   def getNodesforGroup(node: NetAddress): Set[NetAddress] = partitions.filter(partition => partition._2.iterator.contains(node)).foldLeft(Set.empty[NetAddress]) {
     case (acc, kv) => acc ++ kv._2
   }
@@ -67,7 +56,7 @@ class LookupTable extends NodeAssignment with Serializable {
     val entry =  partitions.filter(partition =>  partition._2.iterator.contains(node)).toList
     if (entry.size>0) {
       return entry(0)._1
-    }else{ //return -1 if node is not in lut
+    }else{ 
       return -1
     }
   }
@@ -77,13 +66,13 @@ class LookupTable extends NodeAssignment with Serializable {
   }
 
 
-  // add a node to a partition
+ 
   def addNodetoGroup(node: NetAddress, partitionIdx: Int) {
     partitions.put(partitionIdx -> node);
-    true //how to return false?
+    true 
   }
 
-  // remove a node from a partition
+  
   def removeNodefromGroup(node: NetAddress, partitionIdx: Int): Boolean ={
     if(partitions.get(partitionIdx).get.contains(node)){
       partitions.remove(partitionIdx -> node);
@@ -109,14 +98,14 @@ class LookupTable extends NodeAssignment with Serializable {
 
 object LookupTable {
 
-  // our generate function
-  def generate(nodes: Set[NetAddress], rDegree: Int ): LookupTable = { // nodes contain the set of nodeaddresses that are available, rDegree: replication Degree of our system
+  
+  def generate(nodes: Set[NetAddress], rDegree: Int ): LookupTable = { 
     val lut = new LookupTable();
-    var availablePartitions = math.floor(nodes.size / rDegree).toInt; // how many partitions of at least #repldegree nodes can be filled
+    var availablePartitions = math.floor(nodes.size / rDegree).toInt; 
     var idxIterator = 0;
     var round = 0;
 
-    for(node <- nodes){ // distribute the nodes into availablePartitions
+    for(node <- nodes){ 
       lut.partitions.put(idxIterator -> node);
       if (round == 0){
         lut.leader += (idxIterator -> node)
