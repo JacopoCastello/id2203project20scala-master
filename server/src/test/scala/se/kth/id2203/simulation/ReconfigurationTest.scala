@@ -23,7 +23,7 @@
  */
 package se.kth.id2203.simulation
 
-iimport java.io.File
+import java.io.File
 import java.net.{InetAddress, UnknownHostException}
 import org.scalatest._
 import se.kth.id2203.ParentComponent
