@@ -38,7 +38,7 @@ class LinTestClient extends ComponentDefinition {
         trace.enqueue(opPUT)
         pending += (opPUT.id -> opPUT.value)
         logger.info("Sending {}", opPUT)
-        //SimulationResult += (opPUT.key -> opPUT.value)
+        
 
         val opGet = new Op("GET", i.toString, " ", " ")
         val routeMsg1 = RouteMsg(opGet.key, opGet) 
