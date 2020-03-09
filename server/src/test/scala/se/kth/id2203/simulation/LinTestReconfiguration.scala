@@ -12,6 +12,7 @@ import se.sics.kompics.sl._
 import se.sics.kompics.sl.simulator._
 import scala.concurrent.duration._
 import scala.reflect.io.Directory
+//please update those comments if errors appear
 
 
 
